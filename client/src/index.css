@@ -246,7 +246,7 @@ a:hover { color: var(--lime-2); }
 
 .hero-copy {
   text-align: center;
-  max-width: 920px;
+  max-width: none;
   margin: 0 auto 8px;
 }
 
@@ -282,7 +282,7 @@ a:hover { color: var(--lime-2); }
 .hero-word {
   font-family: var(--display);
   font-weight: 800;
-  font-size: clamp(3.4rem, 12vw, 8rem);
+  font-size: clamp(3.2rem, 11.5vw, 7.4rem);
   line-height: 0.86;
   letter-spacing: -0.06em;
   text-transform: uppercase;
