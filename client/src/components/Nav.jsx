@@ -6,10 +6,10 @@ export default function Nav() {
   return (
     <header className="nav">
       <div className="nav-inner">
-        <Link to="/" className="brand" aria-label="Pay to Asset home">
+        <Link to="/" className="brand" aria-label="Card to Crypto home">
           <BrandMark />
           <span className="brand-word">
-            Pay <span className="brand-arrow" aria-hidden="true">→</span> Asset
+            Card <span className="brand-arrow">to</span> Crypto
           </span>
         </Link>
 
@@ -24,7 +24,7 @@ export default function Nav() {
         <div className="nav-end">
           <ThemeToggle />
           <a href="/#checkout" className="nav-cta">
-            Buy crypto
+            Buy now
           </a>
         </div>
       </div>

@@ -9,7 +9,7 @@ export default function Footer() {
           <div className="brand footer-lockup">
             <BrandMark size={32} />
             <span className="brand-word">
-              Pay <span className="brand-arrow" aria-hidden="true">→</span> Asset
+              Card <span className="brand-arrow">to</span> Crypto
             </span>
           </div>
           <p>
@@ -48,8 +48,8 @@ export default function Footer() {
         </div>
       </div>
       <div className="wrap footer-bar">
-        <span>© {new Date().getFullYear()} Pay → Asset</span>
-        <span className="mono muted">payment-to-asset.vercel.app</span>
+        <span>© {new Date().getFullYear()} Card to Crypto</span>
+        <span className="mono muted">www.tackers.xyz</span>
       </div>
     </footer>
   );

@@ -78,7 +78,7 @@ export default function Home() {
   const canPay = addr.ok && amountOk && !loading;
 
   useEffect(() => {
-    document.title = `${meta.buyTitle} — Pay → Asset`;
+    document.title = `${meta.buyTitle} — Card to Crypto`;
   }, [meta.buyTitle]);
 
   useEffect(() => {

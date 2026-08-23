@@ -44,6 +44,10 @@ export default function Success() {
     }
   }, [order]);
 
+  useEffect(() => {
+    document.title = 'Your order — Card to Crypto';
+  }, []);
+
   const meta = getAsset(order?.asset);
   const explorerUrl =
     order?.explorer_url ||

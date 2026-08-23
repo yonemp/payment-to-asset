@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { fetchOrder } from '../lib/api';
 
@@ -6,6 +6,10 @@ const UUID_HINT = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[
 
 export default function Lookup() {
   const navigate = useNavigate();
+
+  useEffect(() => {
+    document.title = 'Find an order — Card to Crypto';
+  }, []);
   const [id, setId] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
