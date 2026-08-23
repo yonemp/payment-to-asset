@@ -49,6 +49,7 @@ Set in Vercel Production. Never commit real values.
 ## API
 
 POST /api/create-payment  asset must be ETH, SOL, or BTC.
+GET /api/quote?asset=ETH&usdAmount=100  uses the same rate source as payout
 GET /api/order/:id
 POST /api/stripe-webhook
 GET /api/health  mode is live. stripe is true only for sk_live_ keys.

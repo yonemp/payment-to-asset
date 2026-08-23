@@ -267,6 +267,34 @@ app.get('/api/order/:id', orderLimiter, async (req, res) => {
   });
 });
 
+app.get('/api/quote', orderLimiter, async (req, res) => {
+  try {
+    const asset = String(req.query.asset || '').toUpperCase();
+    const fiat = Number(req.query.usdAmount);
+    if (!asset || !ADDRESS_PATTERNS[asset]) {
+      return res.status(400).json({ error: 'Invalid or missing asset. Use ETH, SOL, or BTC' });
+    }
+    if (!Number.isFinite(fiat) || fiat < 1 || fiat > 10000) {
+      return res.status(400).json({ error: 'USD amount must be between 1 and 10000' });
+    }
+    const priceUsd = await getAssetPriceUsd(asset);
+    const feeUsd = Number((fiat * 0.02).toFixed(2));
+    const netUsd = Number((fiat * 0.98).toFixed(2));
+    const cryptoAmount = Number((netUsd / priceUsd).toFixed(8));
+    res.json({
+      asset,
+      usdAmount: fiat,
+      feeUsd,
+      netUsd,
+      priceUsd,
+      cryptoAmount,
+    });
+  } catch (err) {
+    console.error('[quote]', err);
+    res.status(502).json({ error: 'Quote unavailable' });
+  }
+});
+
 app.get('/api/health', async (_req, res) => {
   let store = db.driver === 'sqlite' ? 'sqlite' : 'down';
   try {
