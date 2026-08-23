@@ -1,0 +1,13 @@
+﻿node_modules/
+dist/
+server/.env
+.env
+.env.local
+.env.*.local
+server/orders.db
+server/orders.db-wal
+server/orders.db-shm
+.vercel
+*.log
+.DS_Store
+Thumbs.db
