@@ -997,7 +997,10 @@ input[type="number"] {
 }
 
 @media (max-width: 640px) {
-  .hero-word { font-size: 3.6rem; }
+  .hero-word {
+    font-size: clamp(2.15rem, 11.5vw, 3.05rem);
+    max-width: 100%;
+  }
   .ticket { padding: 16px; }
   .asset-grid { grid-template-columns: repeat(3, 1fr); }
   .wrap { width: min(var(--wrap), calc(100% - 28px)); }
