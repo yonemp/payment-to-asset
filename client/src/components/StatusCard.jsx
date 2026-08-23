@@ -25,7 +25,7 @@ export default function StatusCard({ health }) {
               <span>{chain?.network || rail.chain}</span>
             </div>
             <span className="rail-chip">
-              {ready === true ? 'ready' : ready === false ? 'desk' : 'mainnet'}
+              {ready === true ? 'ready' : 'mainnet'}
             </span>
           </div>
         );

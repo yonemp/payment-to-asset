@@ -282,7 +282,7 @@ a:hover { color: var(--lime-2); }
 .hero-word {
   font-family: var(--display);
   font-weight: 800;
-  font-size: clamp(4.2rem, 16vw, 10.4rem);
+  font-size: clamp(3.4rem, 12vw, 8rem);
   line-height: 0.86;
   letter-spacing: -0.06em;
   text-transform: uppercase;
