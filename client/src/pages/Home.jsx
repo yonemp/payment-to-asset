@@ -11,7 +11,7 @@ import { ASSETS, feeMath, formatUsd, getAsset, MAX_USD, MIN_USD, validateAddress
 const FAQ = [
   {
     q: 'How fast is delivery?',
-    a: 'You pay on Stripe first. After the card confirms we broadcast the asset on the selected mainnet. Ethereum and Solana are typically minutes; Bitcoin depends on mempool conditions.',
+    a: 'You pay on Stripe first. After the card confirms we broadcast the asset to your wallet. Ethereum and Solana are typically minutes; Bitcoin depends on mempool conditions.',
   },
   {
     q: 'What is the fee?',
@@ -19,7 +19,7 @@ const FAQ = [
   },
   {
     q: 'Which networks are supported?',
-    a: 'Ethereum mainnet, Solana mainnet, and Bitcoin mainnet. There is no testnet path.',
+    a: 'Ethereum, Solana, and Bitcoin. There is no testnet path.',
   },
   {
     q: 'What if I enter the wrong address?',
@@ -159,12 +159,12 @@ export default function Home() {
 
           <p className="buy-lede">
             Buy {meta.name} ({meta.symbol}) with a credit or debit card in three
-            steps. Pay in USD, receive on {meta.network}.
+            steps. Pay in USD, receive in your wallet.
           </p>
 
           <ul className="buy-checks">
             <li><span className="chk" aria-hidden="true">✓</span> Card checkout via Stripe</li>
-            <li><span className="chk" aria-hidden="true">✓</span> Mainnet delivery to your wallet</li>
+            <li><span className="chk" aria-hidden="true">✓</span> Delivered to your wallet</li>
             <li><span className="chk" aria-hidden="true">✓</span> 2% service fee, live quote</li>
           </ul>
 
@@ -261,7 +261,7 @@ export default function Home() {
         <div className="wrap">
           <div className="section-head center">
             <h2>How to buy {meta.name} ({meta.symbol}) with a credit and debit card</h2>
-            <p>Four steps from USD to a mainnet wallet. No extra apps.</p>
+            <p>Four steps from USD to your wallet. No extra apps.</p>
           </div>
           <ol className="how-grid">
             <li>
@@ -272,7 +272,7 @@ export default function Home() {
             <li>
               <span className="how-num">2</span>
               <h3>Enter your wallet address</h3>
-              <p>Provide a {meta.network} address. Make sure the wallet supports {meta.symbol} on mainnet.</p>
+              <p>Provide a wallet address. Make sure the wallet supports {meta.symbol}.</p>
             </li>
             <li>
               <span className="how-num">3</span>
@@ -292,7 +292,7 @@ export default function Home() {
         <div className="wrap">
           <div className="section-head center">
             <h2>Networks we deliver on</h2>
-            <p>Three mainnets. Destination is yours.</p>
+            <p>Three networks. Destination is yours.</p>
           </div>
           <div className="net-grid">
             {ASSETS.map((a) => (

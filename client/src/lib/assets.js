@@ -16,7 +16,7 @@ export const ASSETS = [
     value: 'ETH',
     name: 'Ethereum',
     symbol: 'ETH',
-    network: 'Ethereum mainnet',
+    network: 'Ethereum',
     chain: 'chainId 1',
     tint: 'eth',
     mark: '/asset-eth.png',
@@ -32,8 +32,8 @@ export const ASSETS = [
     value: 'SOL',
     name: 'Solana',
     symbol: 'SOL',
-    network: 'Solana mainnet-beta',
-    chain: 'mainnet-beta',
+    network: 'Solana',
+    chain: 'Solana',
     tint: 'sol',
     mark: '/asset-sol.png',
     explorerName: 'Solscan',
@@ -48,8 +48,8 @@ export const ASSETS = [
     value: 'BTC',
     name: 'Bitcoin',
     symbol: 'BTC',
-    network: 'Bitcoin mainnet',
-    chain: 'mainnet',
+    network: 'Bitcoin',
+    chain: 'Bitcoin',
     tint: 'btc',
     mark: '/asset-btc.png',
     explorerName: 'mempool.space',
@@ -81,7 +81,7 @@ export function validateAddress(asset, raw) {
   const meta = getAsset(asset);
 
   if (!value) {
-    return { ok: false, tone: 'idle', message: `Enter a ${meta.network} address.` };
+    return { ok: false, tone: 'idle', message: `Enter a ${meta.name} wallet address.` };
   }
 
   if (asset === 'ETH') {
@@ -99,7 +99,7 @@ export function validateAddress(asset, raw) {
         message: `Needs 40 hex characters after 0x · ${hex.length}/40`,
       };
     }
-    return { ok: true, tone: 'ok', message: 'Valid Ethereum mainnet address.' };
+    return { ok: true, tone: 'ok', message: 'Valid Ethereum wallet address.' };
   }
 
   if (asset === 'SOL') {
@@ -116,22 +116,22 @@ export function validateAddress(asset, raw) {
       return { ok: false, tone: 'warn', message: `Too long for a Solana address · ${value.length}` };
     }
     if (ADDRESS_PATTERNS.SOL.test(value)) {
-      return { ok: true, tone: 'ok', message: 'Valid Solana mainnet address.' };
+      return { ok: true, tone: 'ok', message: 'Valid Solana wallet address.' };
     }
     return { ok: false, tone: 'warn', message: 'Address format is not a valid Solana public key.' };
   }
 
   if (asset === 'BTC') {
     if (!/^(bc1|[13])/.test(value)) {
-      return { ok: false, tone: 'warn', message: 'Bitcoin mainnet addresses start with bc1, 1, or 3.' };
+      return { ok: false, tone: 'warn', message: 'Bitcoin addresses start with bc1, 1, or 3.' };
     }
     if (value.length < 26) {
       return { ok: false, tone: 'warn', message: `Address looks incomplete · ${value.length} characters` };
     }
     if (ADDRESS_PATTERNS.BTC.test(value)) {
-      return { ok: true, tone: 'ok', message: 'Valid Bitcoin mainnet address.' };
+      return { ok: true, tone: 'ok', message: 'Valid Bitcoin wallet address.' };
     }
-    return { ok: false, tone: 'warn', message: 'Not a recognized Bitcoin mainnet address.' };
+    return { ok: false, tone: 'warn', message: 'Not a recognized Bitcoin wallet address.' };
   }
 
   return { ok: false, tone: 'warn', message: 'Unsupported asset.' };

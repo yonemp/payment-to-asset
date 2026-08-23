@@ -42,7 +42,7 @@ export default function MetricRack({ asset, fees, quote, quoteState }) {
 
       <div className="metric-block">
         <dt>Confirm target</dt>
-        <dd>{CONFIRM[asset] || 'mainnet'}</dd>
+        <dd>{CONFIRM[asset] || 'on-chain'}</dd>
       </div>
     </aside>
   );

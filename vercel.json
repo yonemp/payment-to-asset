@@ -8,6 +8,8 @@
   "rewrites": [
     { "source": "/api/:path*", "destination": "/api" },
     { "source": "/lookup", "destination": "/index.html" },
-    { "source": "/success", "destination": "/index.html" }
+    { "source": "/success", "destination": "/index.html" },
+    { "source": "/privacy", "destination": "/index.html" },
+    { "source": "/terms", "destination": "/index.html" }
   ]
 }

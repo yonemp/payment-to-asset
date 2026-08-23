@@ -1,7 +1,7 @@
 const STEPS = [
   { key: 'paid', label: 'Paid', wait: 'Waiting for Stripe confirmation' },
   { key: 'quoted', label: 'Quoted', wait: 'Conversion sized at live rate' },
-  { key: 'broadcasting', label: 'Broadcasting', wait: 'Submitting the mainnet transfer' },
+  { key: 'broadcasting', label: 'Broadcasting', wait: 'Submitting the transfer' },
   { key: 'confirmed', label: 'Confirmed', wait: 'Waiting for the explorer link' },
 ];
 
@@ -41,7 +41,7 @@ export default function Timeline({ order }) {
                 {st === 'done' && step.key === 'quoted' && order
                   ? `${order.crypto_amount} ${order.asset} reserved at quote`
                   : null}
-                {st === 'done' && step.key === 'broadcasting' && 'Transfer submitted to mainnet'}
+                {st === 'done' && step.key === 'broadcasting' && 'Transfer submitted'}
                 {st === 'done' && step.key === 'confirmed' && 'On-chain delivery complete'}
                 {st === 'active' && step.wait}
                 {st === 'wait' && step.wait}

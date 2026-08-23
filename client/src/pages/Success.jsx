@@ -90,7 +90,7 @@ export default function Success() {
                 <>
                   <div className="ticket-top">
                     <span className={`status-pill ${order.status}`}>{order.status}</span>
-                    <span className="pill">{order.asset} · mainnet</span>
+                    <span className="pill">{order.asset}</span>
                   </div>
                   <Timeline order={order} />
 

@@ -1,31 +1,37 @@
 const RAILS = [
-  { id: 'ETH', label: 'Ethereum', chain: 'mainnet · chainId 1', tint: 'eth' },
-  { id: 'SOL', label: 'Solana', chain: 'mainnet-beta', tint: 'sol' },
-  { id: 'BTC', label: 'Bitcoin', chain: 'mainnet', tint: 'btc' },
+  { id: 'ETH', label: 'Ethereum', chain: 'Ethereum', tint: 'eth' },
+  { id: 'SOL', label: 'Solana', chain: 'Solana', tint: 'sol' },
+  { id: 'BTC', label: 'Bitcoin', chain: 'Bitcoin', tint: 'btc' },
 ];
 
 export default function StatusCard({ health }) {
+  const stripeLabel = health?.stripe
+    ? 'Stripe live'
+    : health
+      ? 'Stripe key missing'
+      : 'Stripe';
+  const storeLabel = health?.store && health.store !== 'down' ? health.store : health ? 'store down' : '—';
+
   return (
     <aside className="glass mini-card status-float">
       <div className="mini-head">
         <h3>Live rails</h3>
         <span className="pill">
           <span className="live-dot" />
-          {health?.ok ? 'health' : 'mainnet'}
+          {health?.ok ? 'health' : 'offline'}
         </span>
       </div>
       {RAILS.map((rail) => {
         const ready = health?.payouts?.[rail.id];
-        const chain = health?.networks?.[rail.id];
         return (
           <div key={rail.id} className="rail-row">
             <span className={`rail-dot ${rail.tint}`} />
             <div className="rail-copy">
               <strong>{rail.id}</strong>
-              <span>{chain?.network || rail.chain}</span>
+              <span>{rail.label}</span>
             </div>
             <span className="rail-chip">
-              {ready === true ? 'ready' : 'mainnet'}
+              {ready === true ? 'ready' : 'offline'}
             </span>
           </div>
         );
@@ -36,7 +42,11 @@ export default function StatusCard({ health }) {
       </div>
       <div className="detail-row" style={{ paddingTop: 0 }}>
         <span>Checkout</span>
-        <span>{health?.stripe ? 'Stripe live' : 'Stripe'}</span>
+        <span>{stripeLabel}</span>
+      </div>
+      <div className="detail-row" style={{ paddingTop: 0 }}>
+        <span>Store</span>
+        <span>{storeLabel}</span>
       </div>
     </aside>
   );

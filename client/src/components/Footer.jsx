@@ -26,15 +26,17 @@ export default function Footer() {
             <li><a href="/#how">How it works</a></li>
             <li><a href="/#networks">Networks</a></li>
             <li><Link to="/lookup">Order lookup</Link></li>
+            <li><Link to="/privacy">Privacy</Link></li>
+            <li><Link to="/terms">Terms</Link></li>
           </ul>
         </div>
 
         <div>
           <h2 className="footer-head">Networks</h2>
           <ul>
-            <li>Ethereum · mainnet</li>
-            <li>Solana · mainnet</li>
-            <li>Bitcoin · mainnet</li>
+            <li>Ethereum</li>
+            <li>Solana</li>
+            <li>Bitcoin</li>
             <li>Card via Stripe</li>
           </ul>
         </div>
@@ -49,6 +51,11 @@ export default function Footer() {
       </div>
       <div className="wrap footer-bar">
         <span>© {new Date().getFullYear()} Card to Crypto</span>
+        <span className="footer-legal">
+          <Link to="/privacy">Privacy</Link>
+          <span aria-hidden="true">·</span>
+          <Link to="/terms">Terms</Link>
+        </span>
         <span className="mono muted">www.tackers.xyz</span>
       </div>
     </footer>
