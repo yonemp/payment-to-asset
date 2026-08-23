@@ -1,7 +1,7 @@
 /**
  * Payment-to-Asset Delivery Demo Server
  * Stripe TEST mode only + mock testnet payout.
- * For internal QA — no real funds.
+ * For internal QA â€” no real funds.
  */
 require('dotenv').config();
 const express = require('express');
@@ -14,8 +14,8 @@ const path = require('path');
 const crypto = require('crypto');
 
 const PORT = process.env.PORT || 3001;
-const CLIENT_URL = process.env.CLIENT_URL || 'http://localhost:5173';
-const DATABASE_PATH = process.env.DATABASE_PATH || path.join(__dirname, 'orders.db');
+const CLIENT_URL = process.env.CLIENT_URL || (process.env.VERCEL_PROJECT_PRODUCTION_URL ? ('https://' + process.env.VERCEL_PROJECT_PRODUCTION_URL) : (process.env.VERCEL_URL ? ('https://' + process.env.VERCEL_URL) : 'http://localhost:5173'));
+const DATABASE_PATH = process.env.DATABASE_PATH || (process.env.VERCEL ? path.join('/tmp', 'orders.db') : path.join(__dirname, 'orders.db'));
 const STRIPE_SECRET_KEY = process.env.STRIPE_SECRET_KEY || 'sk_test_placeholder';
 const STRIPE_WEBHOOK_SECRET = process.env.STRIPE_WEBHOOK_SECRET || 'whsec_test_placeholder';
 
@@ -158,7 +158,7 @@ function mockSwapAndPayout({ orderId, asset, cryptoAmount, walletAddress }) {
 // ---------------------------------------------------------------------------
 const app = express();
 
-// CORS — only local Vite
+// CORS â€” only local Vite
 app.use(
   cors({
     origin: CLIENT_URL,
@@ -177,7 +177,7 @@ const apiLimiter = rateLimit({
 });
 
 // ---------------------------------------------------------------------------
-// Webhook must receive raw body — mount before json parser
+// Webhook must receive raw body â€” mount before json parser
 // ---------------------------------------------------------------------------
 app.post(
   '/api/stripe-webhook',
@@ -220,7 +220,7 @@ app.post(
             tx_hash: result.txHash,
             stripe_session_id: sessionId,
           });
-          console.log(`[mock-swap] Order ${order.id} completed → ${result.txHash}`);
+          console.log(`[mock-swap] Order ${order.id} completed â†’ ${result.txHash}`);
         } catch (err) {
           updateOrderBySession.run({
             status: 'failed',
@@ -277,7 +277,7 @@ app.post('/api/create-payment', apiLimiter, async (req, res) => {
             currency: 'usd',
             product_data: {
               name: `Testnet ${asset} delivery`,
-              description: `QA demo — ${cryptoAmount} ${asset} to ${walletAddress.slice(0, 10)}…`,
+              description: `QA demo â€” ${cryptoAmount} ${asset} to ${walletAddress.slice(0, 10)}â€¦`,
             },
             unit_amount: Math.round(fiat * 100), // cents
           },
@@ -317,7 +317,7 @@ app.post('/api/create-payment', apiLimiter, async (req, res) => {
 });
 
 // ---------------------------------------------------------------------------
-// GET /api/order/:id — status polling
+// GET /api/order/:id â€” status polling
 // ---------------------------------------------------------------------------
 app.get('/api/order/:id', apiLimiter, (req, res) => {
   const order = getOrderById.get(req.params.id);
@@ -342,9 +342,13 @@ app.get('/api/health', (_req, res) => {
   res.json({ ok: true, mode: 'test', stripe: STRIPE_SECRET_KEY.startsWith('sk_test_') });
 });
 
-// ---------------------------------------------------------------------------
-app.listen(PORT, () => {
-  console.log(`Payment-to-asset QA server listening on http://localhost:${PORT}`);
-  console.log(`Stripe key prefix: ${STRIPE_SECRET_KEY.slice(0, 10)}…`);
-  console.log(`CORS origin: ${CLIENT_URL}`);
-});
+module.exports = app;
+
+if (require.main === module) {
+  app.listen(PORT, () => {
+    console.log('Payment-to-asset QA server listening on http://localhost:' + PORT);
+    console.log('Stripe key prefix: ' + STRIPE_SECRET_KEY.slice(0, 10) + '...');
+    console.log('CORS origin: ' + CLIENT_URL);
+  });
+}
+

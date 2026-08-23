@@ -11,3 +11,9 @@ server/orders.db-shm
 *.log
 .DS_Store
 Thumbs.db
+
+/public
+.vercel
+.env*
+!.env.example
+!server/.env.example
