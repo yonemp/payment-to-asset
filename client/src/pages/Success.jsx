@@ -54,7 +54,7 @@ export default function Success() {
       <div className="wrap status-wrap">
         <div className="section-head">
           <p className="eyebrow">Delivery</p>
-          <h1>Order status</h1>
+          <h1>order status</h1>
           <p>Paid → Quoted → Broadcasting → Confirmed. This page polls until the transfer lands or fails.</p>
         </div>
 

@@ -1,11 +1,15 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import AmountField from '../components/AmountField';
+import AssetGlyph from '../components/AssetGlyph';
 import AssetPicker from '../components/AssetPicker';
 import FeeTicket from '../components/FeeTicket';
+import MetricRack from '../components/MetricRack';
+import RadarBg from '../components/RadarBg';
+import StatusCard from '../components/StatusCard';
 import WalletField from '../components/WalletField';
 import { createPayment, fetchHealth, fetchQuote } from '../lib/api';
-import { ASSETS, feeMath, getAsset, MAX_USD, MIN_USD, validateAddress } from '../lib/assets';
+import { ASSETS, feeMath, formatCrypto, getAsset, MAX_USD, MIN_USD, validateAddress } from '../lib/assets';
 
 const FAQ = [
   {
@@ -112,75 +116,48 @@ export default function Home() {
     }
   }
 
+  const recvAmount =
+    quoteState === 'ready' && quote
+      ? formatCrypto(quote.cryptoAmount, asset)
+      : quoteState === 'loading'
+        ? 'Quoting…'
+        : '—';
+
   return (
     <>
-      <section className="hero">
-        <div className="hero-art" aria-hidden="true">
-          <img src="/hero.jpg" alt="" />
-        </div>
-        <div className="wrap hero-copy">
-          <p className="eyebrow">
-            <span className="gold-dot" />
-            Card to mainnet
-          </p>
-          <h1>
-            Pay in dollars.
-            <em> Receive the asset.</em>
-          </h1>
-          <p className="lede">
-            Stripe Checkout for ETH, SOL, or BTC. Destination is yours. Settlement is on
-            mainnet — not a voucher, not a testnet, not a simulated balance.
-          </p>
-          <div className="hero-actions">
-            <a href="#checkout" className="btn">
-              Build an order
-            </a>
-            <a href="#how" className="btn btn-ghost">
-              See the path
-            </a>
-          </div>
-          <dl className="hero-facts">
-            <div>
-              <dt>Networks</dt>
-              <dd>ETH · SOL · BTC</dd>
+      <section className="hero" id="checkout">
+        <RadarBg />
+        <div className="wrap hero-stack">
+          <div className="hero-copy">
+            <p className="live-badge">
+              <span className="live-dot" />
+              card → mainnet
+            </p>
+            <h1 className="hero-word">CONVERT</h1>
+            <p className="hero-sub">
+              pay in <em className="c-pink">dollars</em>. settle on{' '}
+              <em className="c-cyan">mainnet</em>. receive <em className="c-lime">on-chain</em>.
+            </p>
+            <p className="lede">
+              Stripe Checkout for ETH, SOL, or BTC. Destination is yours. Settlement is on
+              mainnet — not a voucher, not a testnet, not a simulated balance.
+            </p>
+            <div className="hero-actions">
+              <a href="#ticket" className="btn">
+                Open ticket →
+              </a>
+              <a href="#how" className="btn btn-ghost">
+                See the path
+              </a>
             </div>
-            <div>
-              <dt>Fee</dt>
-              <dd>2% service</dd>
-            </div>
-            <div>
-              <dt>Checkout</dt>
-              <dd>{health?.stripe ? 'Stripe live' : 'Stripe Checkout'}</dd>
-            </div>
-          </dl>
-        </div>
-      </section>
-
-      <section id="checkout" className="section checkout">
-        <div className="wrap">
-          <div className="section-head">
-            <p className="eyebrow">Order ticket</p>
-            <h2>Choose the asset. Name the destination.</h2>
-            <p>The ticket is the whole order — asset, amount, address, and the 2% fee in plain numbers.</p>
           </div>
 
-          <form className="checkout-grid" onSubmit={handlePay}>
-            <div className="checkout-visual">
-              <AssetPicker value={asset} onChange={setAsset} disabled={loading} />
-              <div className="network-aside">
-                <img src={meta.mark} alt="" width="48" height="48" />
-                <div>
-                  <strong>{meta.name}</strong>
-                  <p>
-                    {meta.network} · {meta.chain}. Explorer {meta.explorerName}.
-                  </p>
-                </div>
-              </div>
-            </div>
+          <div className="hero-widgets">
+            <StatusCard health={health} />
 
-            <div className="ticket">
+            <form id="ticket" className="ticket ticket-float" onSubmit={handlePay}>
               <div className="ticket-top">
-                <span className="ticket-kicker">Live checkout</span>
+                <span className="ticket-kicker">You pay → they receive</span>
                 <span className="pill">{meta.symbol} · mainnet</span>
               </div>
 
@@ -190,7 +167,26 @@ export default function Home() {
                 </div>
               )}
 
-              <AmountField value={usd} onChange={setUsd} disabled={loading} />
+              <div className="xfer">
+                <div className="xfer-pane">
+                  <span className="xfer-label">You pay</span>
+                  <AmountField value={usd} onChange={setUsd} disabled={loading} />
+                </div>
+                <div className="xfer-swap" aria-hidden="true">↓</div>
+                <div className="xfer-pane">
+                  <span className="xfer-label">They receive</span>
+                  <div className="recv">
+                    <span className="recv-amt">{recvAmount}</span>
+                    <span className="recv-meta">
+                      {quoteState === 'ready' && quote?.priceUsd
+                        ? `live · ${asset}`
+                        : 'sized at payout'}
+                    </span>
+                  </div>
+                </div>
+              </div>
+
+              <AssetPicker value={asset} onChange={setAsset} disabled={loading} />
               <WalletField asset={asset} value={wallet} onChange={setWallet} disabled={loading} />
               <FeeTicket asset={asset} fees={fees} quote={quote} quoteState={quoteState} />
 
@@ -201,43 +197,56 @@ export default function Home() {
                     Opening Stripe…
                   </>
                 ) : (
-                  <>Continue to Stripe{amountOk ? ` · $${usdNum.toFixed(2)}` : ''}</>
+                  <>Pay now{amountOk ? ` · $${usdNum.toFixed(2)}` : ''} →</>
                 )}
               </button>
               <p className="fineprint">
                 You will pay on Stripe. We broadcast {meta.symbol} to the address above after
                 the payment confirms.
               </p>
-            </div>
-          </form>
+            </form>
+
+            <MetricRack asset={asset} fees={fees} quote={quote} quoteState={quoteState} />
+          </div>
+        </div>
+
+        <div className="trust-bar">
+          <p>Settlement rails</p>
+          <div className="trust-logos">
+            <span>Stripe</span>
+            <span>ETH mainnet</span>
+            <span>SOL mainnet</span>
+            <span>BTC mainnet</span>
+            <span>2% fee</span>
+          </div>
         </div>
       </section>
 
       <section id="how" className="section how">
         <div className="wrap">
-          <div className="section-head">
+          <div className="section-head center">
             <p className="eyebrow">Path</p>
-            <h2>Four steps. No theater.</h2>
+            <h2>four steps. no theater.</h2>
           </div>
           <ol className="how-grid">
             <li>
               <span className="how-num">01</span>
-              <h3>Ticket</h3>
+              <h3>ticket</h3>
               <p>Pick ETH, SOL, or BTC. Enter a mainnet address and a USD amount.</p>
             </li>
             <li>
               <span className="how-num">02</span>
-              <h3>Pay</h3>
+              <h3>pay</h3>
               <p>Stripe Checkout takes the card. The order is stored as pending until the webhook fires.</p>
             </li>
             <li>
               <span className="how-num">03</span>
-              <h3>Convert</h3>
+              <h3>convert</h3>
               <p>Net of the 2% fee, USD is sized at the live rate used by the payout desk.</p>
             </li>
             <li>
               <span className="how-num">04</span>
-              <h3>Broadcast</h3>
+              <h3>broadcast</h3>
               <p>A real mainnet transfer. The success page links the explorer when the hash exists.</p>
             </li>
           </ol>
@@ -246,14 +255,14 @@ export default function Home() {
 
       <section id="networks" className="section networks">
         <div className="wrap">
-          <div className="section-head">
+          <div className="section-head center">
             <p className="eyebrow">Rails</p>
-            <h2>Three mainnets. Nothing else.</h2>
+            <h2>three mainnets. nothing else.</h2>
           </div>
           <div className="net-grid">
             {ASSETS.map((a) => (
               <article key={a.value} className={`net-card tint-${a.tint}`}>
-                <img src={a.mark} alt="" width="64" height="64" />
+                <AssetGlyph tint={a.tint} size={40} />
                 <h3>
                   {a.symbol} <span>{a.name}</span>
                 </h3>
@@ -273,7 +282,7 @@ export default function Home() {
         <div className="wrap faq-grid">
           <div className="section-head">
             <p className="eyebrow">Questions</p>
-            <h2>Before you pay.</h2>
+            <h2>before you pay.</h2>
           </div>
           <div>
             {FAQ.map((item, i) => {

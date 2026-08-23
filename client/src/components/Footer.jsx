@@ -1,4 +1,5 @@
 import { Link } from 'react-router-dom';
+import BrandMark from './BrandMark';
 
 export default function Footer() {
   return (
@@ -6,7 +7,7 @@ export default function Footer() {
       <div className="wrap footer-grid">
         <div className="footer-brand">
           <div className="brand footer-lockup">
-            <img src="/mark.png" alt="" width="32" height="32" className="brand-mark" />
+            <BrandMark size={32} />
             <span className="brand-word">
               Pay <span className="brand-arrow" aria-hidden="true">→</span> Asset
             </span>
@@ -21,7 +22,7 @@ export default function Footer() {
           <h2 className="footer-head">Product</h2>
           <ul>
             <li><a href="/#checkout">Checkout</a></li>
-            <li><a href="/#how">How it works</a></li>
+            <li><a href="/#how">Path</a></li>
             <li><a href="/#networks">Networks</a></li>
             <li><Link to="/lookup">Order lookup</Link></li>
           </ul>
@@ -33,7 +34,7 @@ export default function Footer() {
             <li>Ethereum · chainId 1</li>
             <li>Solana · mainnet-beta</li>
             <li>Bitcoin · mainnet</li>
-            <li>Stripe Checkout · live</li>
+            <li>Stripe Checkout</li>
           </ul>
         </div>
 

@@ -13,7 +13,7 @@ export default function FeeTicket({ asset, fees, quote, quoteState }) {
       </div>
       <div className="detail-row">
         <span>Net converted</span>
-        <span className="gold">{formatUsd(fees.net)}</span>
+        <span className="accent">{formatUsd(fees.net)}</span>
       </div>
       <div className="detail-row">
         <span>Estimated {asset}</span>

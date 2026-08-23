@@ -35,7 +35,7 @@ export default function Lookup() {
       <div className="wrap lookup-wrap">
         <div className="section-head">
           <p className="eyebrow">Lookup</p>
-          <h1>Find an order.</h1>
+          <h1>find an order.</h1>
           <p>
             Paste the order ID from the success page. We only read status — nothing is
             broadcast from here.
