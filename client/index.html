@@ -9,6 +9,20 @@
       content="Buy Ethereum, Solana, or Bitcoin with a credit or debit card. Pay in USD, receive on mainnet."
     />
     <meta name="theme-color" content="#F7F9FD" />
+    <script>
+      (function () {
+        try {
+          var stored = localStorage.getItem("pta-theme");
+          var theme = stored === "dark" || stored === "light"
+            ? stored
+            : (window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light");
+          document.documentElement.setAttribute("data-theme", theme);
+          document.documentElement.style.colorScheme = theme;
+          var meta = document.querySelector('meta[name="theme-color"]');
+          if (meta) meta.setAttribute("content", theme === "dark" ? "#0A0C10" : "#F7F9FD");
+        } catch (e) {}
+      })();
+    </script>
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png" />
     <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16.png" />

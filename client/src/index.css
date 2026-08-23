@@ -31,10 +31,32 @@
   --radius: 18px;
   --radius-sm: 12px;
   --nav-h: 64px;
+  --nav-bg: rgba(255, 255, 255, 0.92);
+  --step-track: #e5eaf4;
+  --offer-bg: #f7fff2;
+  --offer-line: #b8f5a0;
+  --offer-glow: rgba(177, 255, 140, 0.18);
+  --chip-on: #eefbe6;
+  --chip-on-line: #b1ff8c;
+  --pair-tag-bg: #eee7ff;
+  --pair-tag-fg: #6d28d9;
+  --link-hover: #2554e0;
+  --focus-ring: #d7e2ff;
+  --error-line: #fecdd3;
+  --error-ink: #9f1239;
+  --wallet-ok-bg: #f0fdf4;
+  --wallet-ok-line: #86efac;
+  --wallet-warn-bg: #fff1f2;
+  --wallet-warn-line: #fda4af;
+  --pill-pending-bg: #f3f4f6;
+  --pill-pending-fg: #6b7280;
+  --theme-icon: #111827;
+  --theme-btn-bg: transparent;
+  --theme-btn-hover: #f1f4fa;
 }
 
 * { box-sizing: border-box; margin: 0; padding: 0; }
-html { scroll-behavior: smooth; }
+html { scroll-behavior: smooth; color-scheme: light; }
 
 body {
   font-family: var(--sans);
@@ -53,7 +75,7 @@ img { display: block; max-width: 100%; }
 button, input { font-family: inherit; }
 button { cursor: pointer; border: 0; background: none; color: inherit; }
 a { color: var(--blue); text-decoration: none; }
-a:hover { color: #2554e0; }
+a:hover { color: var(--link-hover); }
 
 .mono { font-family: var(--mono); font-size: 0.9em; }
 .muted { color: var(--mute); }
@@ -83,7 +105,7 @@ a:hover { color: #2554e0; }
   top: 0;
   z-index: 40;
   height: var(--nav-h);
-  background: rgba(255, 255, 255, 0.92);
+  background: var(--nav-bg);
   backdrop-filter: blur(16px);
   border-bottom: 1px solid var(--line);
 }
@@ -128,7 +150,7 @@ a:hover { color: #2554e0; }
 .nav-links a:hover,
 .nav-links a.active { color: var(--navy); }
 
-.nav-end { display: flex; justify-self: end; }
+.nav-end { display: flex; align-items: center; justify-self: end; gap: 10px; }
 
 .nav-cta {
   display: inline-flex;
@@ -255,7 +277,7 @@ a:hover { color: #2554e0; }
   display: block;
   height: 4px;
   border-radius: 999px;
-  background: #e5eaf4;
+  background: var(--step-track);
 }
 .step-bar i.on { background: var(--blue); }
 
@@ -307,8 +329,8 @@ a:hover { color: #2554e0; }
   margin-left: 6px;
   padding: 1px 6px;
   border-radius: 6px;
-  background: #eee7ff;
-  color: #6d28d9;
+  background: var(--pair-tag-bg);
+  color: var(--pair-tag-fg);
   font-size: 0.62rem;
   font-weight: 700;
   letter-spacing: 0.04em;
@@ -367,8 +389,8 @@ a:hover { color: #2554e0; }
 }
 .chip:hover { color: var(--navy); }
 .chip.selected {
-  background: #eefbe6;
-  border-color: #b1ff8c;
+  background: var(--chip-on);
+  border-color: var(--chip-on-line);
   color: var(--navy);
 }
 
@@ -425,9 +447,9 @@ a:hover { color: #2554e0; }
   gap: 12px;
   padding: 12px 14px;
   border-radius: 12px;
-  border: 1px solid #b8f5a0;
-  background: #f7fff2;
-  box-shadow: 0 0 0 3px rgba(177, 255, 140, 0.18);
+  border: 1px solid var(--offer-line);
+  background: var(--offer-bg);
+  box-shadow: 0 0 0 3px var(--offer-glow);
 }
 .offer-logo {
   width: 36px;
@@ -473,12 +495,12 @@ input[type="text"] {
   font-size: 0.92rem;
 }
 input[type="text"]:focus {
-  outline: 2px solid #d7e2ff;
+  outline: 2px solid var(--focus-ring);
   border-color: var(--blue);
 }
 .wallet-input { letter-spacing: -0.02em; }
-.wallet-input.tone-ok { border-color: #86efac; background: #f0fdf4; }
-.wallet-input.tone-warn { border-color: #fda4af; background: #fff1f2; }
+.wallet-input.tone-ok { border-color: var(--wallet-ok-line); background: var(--wallet-ok-bg); }
+.wallet-input.tone-warn { border-color: var(--wallet-warn-line); background: var(--wallet-warn-bg); }
 
 .hint { margin-top: 7px; font-size: 0.76rem; color: var(--mute); }
 .hint.tone-ok { color: var(--ok); }
@@ -506,7 +528,8 @@ input[type="text"]:focus {
 .nav-links a:focus-visible,
 .faq-item button:focus-visible,
 input:focus-visible,
-.pair-trigger:focus-visible {
+.pair-trigger:focus-visible,
+.theme-toggle:focus-visible {
   outline: 2px solid var(--focus);
   outline-offset: 3px;
 }
@@ -542,8 +565,8 @@ input:focus-visible,
 }
 .banner.error {
   background: var(--danger-bg);
-  border: 1px solid #fecdd3;
-  color: #9f1239;
+  border: 1px solid var(--error-line);
+  color: var(--error-ink);
 }
 
 .spinner {
@@ -814,7 +837,7 @@ input:focus-visible,
   font-weight: 700;
   text-transform: capitalize;
 }
-.status-pill.pending { background: #f3f4f6; color: #6b7280; }
+.status-pill.pending { background: var(--pill-pending-bg); color: var(--pill-pending-fg); }
 .status-pill.processing { background: #e8eefc; color: var(--blue); }
 .status-pill.completed { background: var(--ok-bg); color: var(--ok); }
 .status-pill.failed { background: var(--danger-bg); color: var(--danger); }
@@ -919,3 +942,65 @@ input:focus-visible,
   .btn, .chip { transition: none; }
   .spinner, .tl-step.is-active .tl-dot { animation: none; }
 }
+
+html[data-theme="dark"] {
+  color-scheme: dark;
+  --bg: #0a0c10;
+  --card: #141820;
+  --field: #1b202b;
+  --line: #262c3a;
+  --line-strong: #353c4e;
+  --text: #eef1f6;
+  --text-dim: #a7b0c0;
+  --mute: #7d8698;
+  --navy: #f4f6fa;
+  --blue: #6d8dff;
+  --blue-dim: #1a2440;
+  --cta: #b1ff8c;
+  --cta-hover: #c6ffad;
+  --cta-ink: #111827;
+  --green: #34d399;
+  --danger: #fb7185;
+  --danger-bg: #3a1520;
+  --ok: #34d399;
+  --ok-bg: #10241a;
+  --focus: #6d8dff;
+  --shadow: 0 10px 40px rgba(0, 0, 0, 0.4);
+  --shadow-sm: 0 4px 16px rgba(0, 0, 0, 0.28);
+  --nav-bg: rgba(10, 12, 16, 0.86);
+  --step-track: #262c3a;
+  --offer-bg: #172217;
+  --offer-line: #4a7a38;
+  --offer-glow: rgba(177, 255, 140, 0.12);
+  --chip-on: #1d2a16;
+  --chip-on-line: #b1ff8c;
+  --pair-tag-bg: #2a2040;
+  --pair-tag-fg: #c4b5fd;
+  --link-hover: #8aa6ff;
+  --focus-ring: #2a3d70;
+  --error-line: #6b2030;
+  --error-ink: #fda4af;
+  --wallet-ok-bg: #10241a;
+  --wallet-ok-line: #166534;
+  --wallet-warn-bg: #3a1520;
+  --wallet-warn-line: #9f1239;
+  --pill-pending-bg: #1b202b;
+  --pill-pending-fg: #9ca3af;
+  --theme-icon: #eef1f6;
+  --theme-btn-bg: transparent;
+  --theme-btn-hover: #1b202b;
+}
+
+.theme-toggle {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  color: var(--theme-icon);
+  background: var(--theme-btn-bg);
+  border: 1px solid var(--line);
+  flex-shrink: 0;
+  transition: background 0.16s ease;
+}
+.theme-toggle:hover { background: var(--theme-btn-hover); }

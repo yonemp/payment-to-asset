@@ -1,5 +1,6 @@
 import { Link, NavLink } from 'react-router-dom';
 import BrandMark from './BrandMark';
+import ThemeToggle from './ThemeToggle';
 
 export default function Nav() {
   return (
@@ -21,6 +22,7 @@ export default function Nav() {
         </nav>
 
         <div className="nav-end">
+          <ThemeToggle />
           <a href="/#checkout" className="nav-cta">
             Buy crypto
           </a>
