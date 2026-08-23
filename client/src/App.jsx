@@ -1,18 +1,17 @@
-import { Routes, Route, useNavigate, useSearchParams, Link } from 'react-router-dom';
+import { Routes, Route, useSearchParams, Link } from 'react-router-dom';
 import { useState, useEffect, useCallback } from 'react';
 
 const ASSETS = [
-  { value: 'SOL-testnet', label: 'SOL (Solana Testnet)', explorer: (h) => `https://solscan.io/tx/${h}?cluster=testnet` },
-  { value: 'ETH-goerli', label: 'ETH (Goerli / Sepolia-style)', explorer: (h) => `https://goerli.etherscan.io/tx/${h}` },
-  { value: 'BTC-testnet', label: 'BTC (Bitcoin Testnet)', explorer: (h) => `https://blockstream.info/testnet/tx/${h}` },
+  { value: 'ETH', label: 'ETH (Ethereum mainnet)', explorer: (h) => `https://etherscan.io/tx/${h}` },
+  { value: 'SOL', label: 'SOL (Solana mainnet)', explorer: (h) => `https://solscan.io/tx/${h}` },
+  { value: 'BTC', label: 'BTC (Bitcoin mainnet)', explorer: (h) => `https://mempool.space/tx/${h}` },
 ];
 
 const API = '/api';
 
 function Home() {
-  const navigate = useNavigate();
   const [searchParams] = useSearchParams();
-  const [asset, setAsset] = useState('ETH-goerli');
+  const [asset, setAsset] = useState('ETH');
   const [wallet, setWallet] = useState('');
   const [usd, setUsd] = useState('10');
   const [loading, setLoading] = useState(false);
@@ -25,9 +24,9 @@ function Home() {
   }, [searchParams]);
 
   const placeholders = {
-    'SOL-testnet': 'e.g. 7EqQdEULxWcraVx3mKFjkd...',
-    'ETH-goerli': 'e.g. 0x71C7656EC7ab88b098defB...',
-    'BTC-testnet': 'e.g. tb1qxy2kgdygjrsqtzq2n0yrf...',
+    ETH: 'e.g. 0x71C7656EC7ab88b098defB751B7401B5f6d8976F',
+    SOL: 'e.g. 7EqQdEULxWcraVx3mXKJkd8YBmFjhWFdsNaAwAZr',
+    BTC: 'e.g. bc1qxy2kgdygjrsqtzq2n0yrf2493p83kkfjhx0wlh',
   };
 
   async function handlePay(e) {
@@ -51,7 +50,6 @@ function Home() {
         throw new Error(data.error || 'Failed to create session');
       }
 
-      // Redirect to Stripe Checkout (test mode)
       window.location.href = data.url;
     } catch (err) {
       setError(err.message);
@@ -62,9 +60,9 @@ function Home() {
   return (
     <div className="container">
       <div className="header">
-        <span className="badge warn">QA DEMO · TEST MODE ONLY</span>
-        <h1 style={{ marginTop: '0.75rem' }}>Pay → Testnet Asset</h1>
-        <p>Stripe test cards → mock testnet delivery. No real funds.</p>
+        <span className="badge">Mainnet</span>
+        <h1 style={{ marginTop: '0.75rem' }}>Pay → Asset</h1>
+        <p>Card payment delivers ETH, SOL, or BTC to your mainnet wallet.</p>
       </div>
 
       <div className="card">
@@ -72,7 +70,7 @@ function Home() {
 
         <form onSubmit={handlePay}>
           <div className="field">
-            <label htmlFor="asset">Asset (testnet)</label>
+            <label htmlFor="asset">Asset</label>
             <select
               id="asset"
               value={asset}
@@ -88,7 +86,7 @@ function Home() {
           </div>
 
           <div className="field">
-            <label htmlFor="wallet">Testnet wallet address</label>
+            <label htmlFor="wallet">Wallet address</label>
             <input
               id="wallet"
               className="mono"
@@ -100,7 +98,7 @@ function Home() {
               disabled={loading}
               autoComplete="off"
             />
-            <p className="hint">Must match the selected network format.</p>
+            <p className="hint">Must be a valid mainnet address for the selected asset.</p>
           </div>
 
           <div className="field">
@@ -116,7 +114,7 @@ function Home() {
               required
               disabled={loading}
             />
-            <p className="hint">2% service fee applied before conversion (demo).</p>
+            <p className="hint">A 2% service fee is applied before conversion.</p>
           </div>
 
           <button type="submit" className="btn" disabled={loading || !wallet.trim()}>
@@ -133,9 +131,7 @@ function Home() {
       </div>
 
       <p className="footer-note">
-        Use test card <span className="mono">4242 4242 4242 4242</span> · any future expiry · any CVC.
-        <br />
-        Webhook required for completion (see README).
+        Live Stripe Checkout. Delivery is a real mainnet transfer after payment confirms.
       </p>
     </div>
   );
@@ -177,7 +173,6 @@ function Success() {
     return () => clearInterval(interval);
   }, [orderId, fetchOrder, polling]);
 
-  // Stop polling once terminal
   useEffect(() => {
     if (order && (order.status === 'completed' || order.status === 'failed')) {
       setPolling(false);
@@ -186,7 +181,8 @@ function Success() {
 
   const assetMeta = ASSETS.find((a) => a.value === order?.asset);
   const explorerUrl =
-    order?.tx_hash && assetMeta ? assetMeta.explorer(order.tx_hash) : null;
+    order?.explorer_url ||
+    (order?.tx_hash && assetMeta ? assetMeta.explorer(order.tx_hash) : null);
 
   if (!orderId) {
     return (
@@ -204,7 +200,7 @@ function Success() {
   return (
     <div className="container">
       <div className="header">
-        <span className="badge warn">QA DEMO · TEST MODE</span>
+        <span className="badge">Mainnet</span>
         <h1 style={{ marginTop: '0.75rem' }}>Order status</h1>
       </div>
 
@@ -256,7 +252,7 @@ function Success() {
                 <p style={{ color: 'var(--muted)', fontSize: '0.9rem' }}>
                   {order.status === 'pending'
                     ? 'Waiting for Stripe confirmation…'
-                    : 'Mock swap in progress (~2s)…'}
+                    : 'Broadcasting mainnet payout…'}
                 </p>
               </div>
             )}
@@ -264,7 +260,7 @@ function Success() {
             {order.status === 'completed' && order.tx_hash && (
               <>
                 <p style={{ marginTop: '1rem', fontWeight: 500, color: 'var(--success)' }}>
-                  Mock delivery complete
+                  Delivery complete
                 </p>
                 <div className="tx-box">{order.tx_hash}</div>
                 {explorerUrl && (
@@ -275,7 +271,7 @@ function Success() {
                     className="btn"
                     style={{ marginTop: '0.5rem' }}
                   >
-                    View on testnet explorer
+                    View on explorer
                   </a>
                 )}
               </>
@@ -283,7 +279,7 @@ function Success() {
 
             {order.status === 'failed' && (
               <div className="error" style={{ marginTop: '1rem' }}>
-                Mock swap failed. In this QA demo there is no automatic refund.
+                Payout failed. The transfer was not broadcast. Contact support with this order ID.
               </div>
             )}
           </>

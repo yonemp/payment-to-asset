@@ -1,114 +1,76 @@
 /**
- * Payment-to-Asset Delivery Demo Server
- * Stripe TEST mode only + mock testnet payout.
- * For internal QA â€” no real funds.
+ * Payment-to-Asset production server.
+ * Stripe live mode + real mainnet payouts (ETH / SOL / BTC).
  */
 require('dotenv').config();
 const express = require('express');
 const cors = require('cors');
 const rateLimit = require('express-rate-limit');
-const Database = require('better-sqlite3');
 const Stripe = require('stripe');
 const { v4: uuidv4 } = require('uuid');
-const path = require('path');
-const crypto = require('crypto');
+const { createDb, schemaSql, nowExpr } = require('./db');
+const {
+  NETWORKS,
+  ADDRESS_PATTERNS,
+  FALLBACK_PRICES_USD,
+  COINGECKO_IDS,
+  validateWalletAddress,
+  payoutReady,
+  sendPayout,
+} = require('./payouts');
 
 const PORT = process.env.PORT || 3001;
+const HOST = process.env.HOST || '127.0.0.1';
 const CLIENT_URL = process.env.CLIENT_URL || (process.env.VERCEL_PROJECT_PRODUCTION_URL ? ('https://' + process.env.VERCEL_PROJECT_PRODUCTION_URL) : (process.env.VERCEL_URL ? ('https://' + process.env.VERCEL_URL) : 'http://localhost:5173'));
-const DATABASE_PATH = process.env.DATABASE_PATH || (process.env.VERCEL ? path.join('/tmp', 'orders.db') : path.join(__dirname, 'orders.db'));
-const STRIPE_SECRET_KEY = process.env.STRIPE_SECRET_KEY || 'sk_test_placeholder';
-const STRIPE_WEBHOOK_SECRET = process.env.STRIPE_WEBHOOK_SECRET || 'whsec_test_placeholder';
+const STRIPE_SECRET_KEY = (process.env.STRIPE_SECRET_KEY || '').trim();
+const STRIPE_WEBHOOK_SECRET = (process.env.STRIPE_WEBHOOK_SECRET || '').trim();
+const STRIPE_LIVE = STRIPE_SECRET_KEY.startsWith('sk_live_');
 
-// ---------------------------------------------------------------------------
-// Stripe (test mode only)
-// ---------------------------------------------------------------------------
-const stripe = new Stripe(STRIPE_SECRET_KEY, {
-  apiVersion: '2024-11-20.acacia',
-});
+const stripe = STRIPE_SECRET_KEY
+  ? new Stripe(STRIPE_SECRET_KEY, { apiVersion: '2024-11-20.acacia' })
+  : null;
 
-// ---------------------------------------------------------------------------
-// SQLite
-// ---------------------------------------------------------------------------
-const db = new Database(DATABASE_PATH);
-db.pragma('journal_mode = WAL');
+const db = createDb();
+const ready = db.exec(schemaSql(db.driver));
 
-// Ensure schema exists (idempotent)
-db.exec(`
-  CREATE TABLE IF NOT EXISTS orders (
-    id TEXT PRIMARY KEY,
-    asset TEXT NOT NULL,
-    fiat_amount REAL NOT NULL,
-    crypto_amount REAL,
-    wallet_address TEXT NOT NULL,
-    status TEXT NOT NULL DEFAULT 'pending',
-    stripe_session_id TEXT,
-    tx_hash TEXT,
-    created_at TEXT NOT NULL DEFAULT (datetime('now')),
-    updated_at TEXT NOT NULL DEFAULT (datetime('now'))
+async function insertOrder(row) {
+  await ready;
+  await db.query(
+    `INSERT INTO orders (id, asset, fiat_amount, crypto_amount, wallet_address, status, stripe_session_id)
+     VALUES ($1, $2, $3, $4, $5, $6, $7)`,
+    [row.id, row.asset, row.fiat_amount, row.crypto_amount, row.wallet_address, row.status, row.stripe_session_id]
   );
-  CREATE INDEX IF NOT EXISTS idx_orders_status ON orders(status);
-  CREATE INDEX IF NOT EXISTS idx_orders_session ON orders(stripe_session_id);
-`);
-
-const insertOrder = db.prepare(`
-  INSERT INTO orders (id, asset, fiat_amount, crypto_amount, wallet_address, status, stripe_session_id)
-  VALUES (@id, @asset, @fiat_amount, @crypto_amount, @wallet_address, @status, @stripe_session_id)
-`);
-
-const updateOrderBySession = db.prepare(`
-  UPDATE orders
-  SET status = @status, tx_hash = @tx_hash, updated_at = datetime('now')
-  WHERE stripe_session_id = @stripe_session_id
-`);
-
-const updateOrderStatus = db.prepare(`
-  UPDATE orders SET status = @status, updated_at = datetime('now')
-  WHERE stripe_session_id = @stripe_session_id
-`);
-
-const getOrderById = db.prepare(`SELECT * FROM orders WHERE id = ?`);
-const getOrderBySession = db.prepare(`SELECT * FROM orders WHERE stripe_session_id = ?`);
-
-// ---------------------------------------------------------------------------
-// Address validation (testnet formats)
-// ---------------------------------------------------------------------------
-const ADDRESS_PATTERNS = {
-  'SOL-testnet': /^[1-9A-HJ-NP-Za-km-z]{32,44}$/,
-  'ETH-goerli': /^0x[a-fA-F0-9]{40}$/,
-  'BTC-testnet': /^(tb1|[2mn])[a-zA-HJ-NP-Z0-9]{25,62}$/,
-};
-
-function validateWalletAddress(asset, address) {
-  const pattern = ADDRESS_PATTERNS[asset];
-  if (!pattern) return { valid: false, error: 'Unsupported asset' };
-  if (!address || typeof address !== 'string') {
-    return { valid: false, error: 'Wallet address required' };
-  }
-  if (!pattern.test(address.trim())) {
-    return { valid: false, error: `Invalid ${asset} testnet address format` };
-  }
-  return { valid: true };
 }
 
-// ---------------------------------------------------------------------------
-// Mock price fetch (CoinGecko + hardcoded fallback)
-// ---------------------------------------------------------------------------
-const FALLBACK_PRICES_USD = {
-  'SOL-testnet': 145.0,
-  'ETH-goerli': 3200.0,
-  'BTC-testnet': 65000.0,
-};
+async function updateOrderBySession({ status, tx_hash, stripe_session_id }) {
+  await ready;
+  await db.query(
+    `UPDATE orders SET status = $1, tx_hash = $2, updated_at = ${nowExpr(db.driver)} WHERE stripe_session_id = $3`,
+    [status, tx_hash, stripe_session_id]
+  );
+}
 
-const COINGECKO_IDS = {
-  'SOL-testnet': 'solana',
-  'ETH-goerli': 'ethereum',
-  'BTC-testnet': 'bitcoin',
-};
+async function updateOrderStatus({ status, stripe_session_id }) {
+  await ready;
+  await db.query(
+    `UPDATE orders SET status = $1, updated_at = ${nowExpr(db.driver)} WHERE stripe_session_id = $2`,
+    [status, stripe_session_id]
+  );
+}
+
+async function getOrderById(id) {
+  await ready;
+  return db.get(`SELECT * FROM orders WHERE id = $1`, [id]);
+}
+
+async function getOrderBySession(sessionId) {
+  await ready;
+  return db.get(`SELECT * FROM orders WHERE stripe_session_id = $1`, [sessionId]);
+}
 
 async function getAssetPriceUsd(asset) {
   const id = COINGECKO_IDS[asset];
   if (!id) return FALLBACK_PRICES_USD[asset] || 1;
-
   try {
     const controller = new AbortController();
     const timeout = setTimeout(() => controller.abort(), 4000);
@@ -128,37 +90,18 @@ async function getAssetPriceUsd(asset) {
   }
 }
 
-// ---------------------------------------------------------------------------
-// Mock swap / testnet payout (deterministic-ish hash, 2s delay)
-// ---------------------------------------------------------------------------
-function mockSwapAndPayout({ orderId, asset, cryptoAmount, walletAddress }) {
-  return new Promise((resolve, reject) => {
-    setTimeout(() => {
-      // ~5% simulated failure for QA edge-case testing
-      if (Math.random() < 0.05) {
-        reject(new Error('Mock exchange temporary failure'));
-        return;
-      }
-      // Deterministic-looking hash from orderId + asset
-      const seed = `${orderId}:${asset}:${cryptoAmount}:${walletAddress}`;
-      const hash = crypto.createHash('sha256').update(seed).digest('hex');
-      const txHash =
-        asset === 'BTC-testnet'
-          ? hash
-          : asset === 'ETH-goerli'
-            ? `0x${hash}`
-            : hash.slice(0, 64); // SOL style
-      resolve({ txHash, status: 'completed' });
-    }, 2000);
-  });
+function requireLiveStripe(res) {
+  if (!stripe || !STRIPE_LIVE) {
+    res.status(503).json({
+      error: 'Stripe live mode is not configured. Set STRIPE_SECRET_KEY to a sk_live_ key.',
+    });
+    return false;
+  }
+  return true;
 }
 
-// ---------------------------------------------------------------------------
-// Express app
-// ---------------------------------------------------------------------------
 const app = express();
 
-// CORS â€” only local Vite
 app.use(
   cors({
     origin: CLIENT_URL,
@@ -167,25 +110,31 @@ app.use(
   })
 );
 
-// Rate limit: 5 req/min per IP on API routes
-const apiLimiter = rateLimit({
+const createLimiter = rateLimit({
   windowMs: 60 * 1000,
-  max: 5,
+  max: 10,
   standardHeaders: true,
   legacyHeaders: false,
   message: { error: 'Too many requests, try again in a minute' },
 });
 
-// ---------------------------------------------------------------------------
-// Webhook must receive raw body â€” mount before json parser
-// ---------------------------------------------------------------------------
+const orderLimiter = rateLimit({
+  windowMs: 60 * 1000,
+  max: 60,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { error: 'Too many requests, try again in a minute' },
+});
+
 app.post(
   '/api/stripe-webhook',
   express.raw({ type: 'application/json' }),
   async (req, res) => {
+    if (!stripe || !STRIPE_WEBHOOK_SECRET) {
+      return res.status(503).send('Stripe live webhook is not configured');
+    }
     const sig = req.headers['stripe-signature'];
     let event;
-
     try {
       event = stripe.webhooks.constructEvent(req.body, sig, STRIPE_WEBHOOK_SECRET);
     } catch (err) {
@@ -196,78 +145,62 @@ app.post(
     if (event.type === 'checkout.session.completed') {
       const session = event.data.object;
       const sessionId = session.id;
-
-      const order = getOrderBySession.get(sessionId);
+      const order = await getOrderBySession(sessionId);
       if (!order) {
         console.warn('[webhook] No order for session', sessionId);
         return res.json({ received: true });
       }
-
-      // Mark processing
-      updateOrderStatus.run({ status: 'processing', stripe_session_id: sessionId });
-
-      // Fire mock swap asynchronously (do not block webhook response)
-      (async () => {
-        try {
-          const result = await mockSwapAndPayout({
-            orderId: order.id,
-            asset: order.asset,
-            cryptoAmount: order.crypto_amount,
-            walletAddress: order.wallet_address,
-          });
-          updateOrderBySession.run({
-            status: 'completed',
-            tx_hash: result.txHash,
-            stripe_session_id: sessionId,
-          });
-          console.log(`[mock-swap] Order ${order.id} completed â†’ ${result.txHash}`);
-        } catch (err) {
-          updateOrderBySession.run({
-            status: 'failed',
-            tx_hash: null,
-            stripe_session_id: sessionId,
-          });
-          console.error(`[mock-swap] Order ${order.id} failed:`, err.message);
-        }
-      })();
+      if (order.status === 'completed' && order.tx_hash) {
+        return res.json({ received: true });
+      }
+      await updateOrderStatus({ status: 'processing', stripe_session_id: sessionId });
+      try {
+        const result = await sendPayout({
+          asset: order.asset,
+          cryptoAmount: order.crypto_amount,
+          walletAddress: order.wallet_address,
+        });
+        await updateOrderBySession({
+          status: 'completed',
+          tx_hash: result.txHash,
+          stripe_session_id: sessionId,
+        });
+        console.log(`[payout] Order ${order.id} completed -> ${result.txHash}`);
+      } catch (err) {
+        await updateOrderBySession({
+          status: 'failed',
+          tx_hash: null,
+          stripe_session_id: sessionId,
+        });
+        console.error(`[payout] Order ${order.id} failed:`, err.message);
+      }
     }
 
     res.json({ received: true });
   }
 );
 
-// JSON body for the rest of the routes
 app.use(express.json());
 
-// ---------------------------------------------------------------------------
-// POST /api/create-payment
-// ---------------------------------------------------------------------------
-app.post('/api/create-payment', apiLimiter, async (req, res) => {
+app.post('/api/create-payment', createLimiter, async (req, res) => {
   try {
+    if (!requireLiveStripe(res)) return;
     const { asset, walletAddress, usdAmount } = req.body;
-
     if (!asset || !ADDRESS_PATTERNS[asset]) {
-      return res.status(400).json({ error: 'Invalid or missing asset. Use SOL-testnet, ETH-goerli, or BTC-testnet' });
+      return res.status(400).json({ error: 'Invalid or missing asset. Use ETH, SOL, or BTC' });
     }
-
     const addrCheck = validateWalletAddress(asset, walletAddress);
     if (!addrCheck.valid) {
       return res.status(400).json({ error: addrCheck.error });
     }
-
     const fiat = Number(usdAmount);
     if (!Number.isFinite(fiat) || fiat < 1 || fiat > 10000) {
       return res.status(400).json({ error: 'USD amount must be between 1 and 10000' });
     }
-
-    // Price + 2% fee
     const priceUsd = await getAssetPriceUsd(asset);
-    const netUsd = fiat * 0.98; // 2% service fee
+    const netUsd = fiat * 0.98;
     const cryptoAmount = Number((netUsd / priceUsd).toFixed(8));
-
     const orderId = uuidv4();
-
-    // Create Stripe Checkout Session (test mode)
     const session = await stripe.checkout.sessions.create({
       payment_method_types: ['card'],
       mode: 'payment',
@@ -276,10 +209,10 @@ app.post('/api/create-payment', apiLimiter, async (req, res) => {
           price_data: {
             currency: 'usd',
             product_data: {
-              name: `Testnet ${asset} delivery`,
-              description: `QA demo â€” ${cryptoAmount} ${asset} to ${walletAddress.slice(0, 10)}â€¦`,
+              name: `${NETWORKS[asset].symbol} delivery`,
+              description: `${cryptoAmount} ${asset} to ${walletAddress.trim().slice(0, 10)}…`,
             },
-            unit_amount: Math.round(fiat * 100), // cents
+            unit_amount: Math.round(fiat * 100),
           },
           quantity: 1,
         },
@@ -292,8 +225,7 @@ app.post('/api/create-payment', apiLimiter, async (req, res) => {
         wallet_address: walletAddress.trim(),
       },
     });
-
-    insertOrder.run({
+    await insertOrder({
       id: orderId,
       asset,
       fiat_amount: fiat,
@@ -302,7 +234,6 @@ app.post('/api/create-payment', apiLimiter, async (req, res) => {
       status: 'pending',
       stripe_session_id: session.id,
     });
-
     res.json({
       sessionId: session.id,
       url: session.url,
@@ -316,14 +247,12 @@ app.post('/api/create-payment', apiLimiter, async (req, res) => {
   }
 });
 
-// ---------------------------------------------------------------------------
-// GET /api/order/:id â€” status polling
-// ---------------------------------------------------------------------------
-app.get('/api/order/:id', apiLimiter, (req, res) => {
-  const order = getOrderById.get(req.params.id);
+app.get('/api/order/:id', orderLimiter, async (req, res) => {
+  const order = await getOrderById(req.params.id);
   if (!order) {
     return res.status(404).json({ error: 'Order not found' });
   }
+  const meta = NETWORKS[order.asset];
   res.json({
     id: order.id,
     asset: order.asset,
@@ -332,23 +261,49 @@ app.get('/api/order/:id', apiLimiter, (req, res) => {
     wallet_address: order.wallet_address,
     status: order.status,
     tx_hash: order.tx_hash,
+    explorer_url: order.tx_hash && meta ? meta.explorerTx(order.tx_hash) : null,
     created_at: order.created_at,
     updated_at: order.updated_at,
   });
 });
 
-// Health
-app.get('/api/health', (_req, res) => {
-  res.json({ ok: true, mode: 'test', stripe: STRIPE_SECRET_KEY.startsWith('sk_test_') });
+app.get('/api/health', async (_req, res) => {
+  let store = db.driver === 'sqlite' ? 'sqlite' : 'down';
+  try {
+    await ready;
+    if (db.driver === 'sqlite') {
+      store = 'sqlite';
+    } else {
+      const ping = await db.query('SELECT 1 AS ok');
+      store = ping.rows && ping.rows.length ? 'ok' : 'down';
+    }
+  } catch (err) {
+    console.warn('[health] store', err.message);
+    store = 'down';
+  }
+  res.json({
+    ok: true,
+    mode: 'live',
+    stripe: STRIPE_LIVE,
+    webhook: Boolean(STRIPE_WEBHOOK_SECRET),
+    store,
+    driver: db.driver,
+    networks: {
+      ETH: { chainId: 1, network: 'mainnet' },
+      SOL: { network: 'mainnet-beta' },
+      BTC: { network: 'mainnet' },
+    },
+    payouts: payoutReady(),
+  });
 });
 
 module.exports = app;
 
 if (require.main === module) {
-  app.listen(PORT, () => {
-    console.log('Payment-to-asset QA server listening on http://localhost:' + PORT);
-    console.log('Stripe key prefix: ' + STRIPE_SECRET_KEY.slice(0, 10) + '...');
+  app.listen(PORT, HOST, () => {
+    console.log('Payment-to-asset production server listening on http://' + HOST + ':' + PORT);
+    console.log('Stripe mode: ' + (STRIPE_LIVE ? 'live' : 'not configured'));
     console.log('CORS origin: ' + CLIENT_URL);
+    console.log('DB driver: ' + db.driver);
   });
 }
-

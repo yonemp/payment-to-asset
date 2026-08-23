@@ -1,20 +1,27 @@
 {
-  "name": "payment-to-asset-server",
-  "version": "1.0.0",
-  "description": "Internal QA demo: Stripe test payment → mock testnet asset delivery",
-  "main": "server.js",
-  "scripts": {
-    "start": "node server.js",
-    "dev": "node --watch server.js",
-    "init-db": "node init-db.js"
-  },
-  "dependencies": {
-    "better-sqlite3": "^11.7.0",
-    "cors": "^2.8.5",
-    "dotenv": "^16.4.7",
-    "express": "^4.21.2",
-    "express-rate-limit": "^7.5.0",
-    "stripe": "^17.5.0",
-    "uuid": "^11.0.5"
-  }
+    "name": "payment-to-asset-server",
+    "version": "1.0.0",
+    "description": "Stripe live checkout to mainnet ETH/SOL/BTC delivery",
+    "main": "server.js",
+    "scripts": {
+        "start": "node server.js",
+        "dev": "node --watch server.js",
+        "init-db": "node init-db.js"
+    },
+    "dependencies": {
+        "@bitcoinerlab/secp256k1": "^2.0.0",
+        "@solana/web3.js": "^1.98.4",
+        "better-sqlite3": "^11.7.0",
+        "bitcoinjs-lib": "^6.1.7",
+        "bs58": "^5.0.0",
+        "cors": "^2.8.5",
+        "dotenv": "^16.4.7",
+        "ecpair": "^2.1.0",
+        "ethers": "^6.17.0",
+        "express": "^4.21.2",
+        "express-rate-limit": "^7.5.0",
+        "pg": "^8.16.3",
+        "stripe": "^17.5.0",
+        "uuid": "^11.0.5"
+    }
 }
