@@ -6,57 +6,52 @@ export default function Footer() {
     <footer className="site-footer">
       <div className="wrap footer-grid">
         <div className="footer-brand">
-          <div className="brand footer-lockup">
-            <BrandMark size={32} />
-            <span className="brand-word">
-              Card <span className="brand-arrow">to</span> Crypto
-            </span>
-          </div>
+          <Link to="/" className="brand footer-lockup">
+            <BrandMark size={28} />
+            <span className="brand-word">Card to Crypto</span>
+          </Link>
           <p>
-            Buy ETH, SOL, or BTC with a card. You pay in USD, we send the asset
-            to your wallet after Stripe confirms. A 2% service fee is taken from
-            the amount you enter.
+            Card checkout that delivers SOL, ETH, or BTC to the wallet you
+            enter. Solana is the featured product.
           </p>
+          <p className="footer-tag mono">CARD · QUOTE · WALLET</p>
         </div>
-
         <div>
-          <h2 className="footer-head">Product</h2>
+          <h2 className="footer-head">Pages</h2>
           <ul>
-            <li><a href="/#checkout">Buy</a></li>
-            <li><a href="/#how">How it works</a></li>
-            <li><a href="/#networks">Networks</a></li>
-            <li><Link to="/lookup">Order lookup</Link></li>
+            <li><Link to="/">Home</Link></li>
+            <li><Link to="/buy/sol">Buy</Link></li>
+            <li><Link to="/how-it-works">How it works</Link></li>
+            <li><Link to="/fees">Fees</Link></li>
+            <li><Link to="/faq">FAQ</Link></li>
+            <li><Link to="/lookup">Lookup</Link></li>
+          </ul>
+        </div>
+        <div>
+          <h2 className="footer-head">Buy</h2>
+          <ul>
+            <li><Link to="/buy/sol">Solana</Link></li>
+            <li><Link to="/buy/eth">Ethereum</Link></li>
+            <li><Link to="/buy/btc">Bitcoin</Link></li>
+          </ul>
+        </div>
+        <div>
+          <h2 className="footer-head">Legal</h2>
+          <ul>
             <li><Link to="/privacy">Privacy</Link></li>
             <li><Link to="/terms">Terms</Link></li>
           </ul>
         </div>
-
-        <div>
-          <h2 className="footer-head">Networks</h2>
-          <ul>
-            <li>Ethereum</li>
-            <li>Solana</li>
-            <li>Bitcoin</li>
-            <li>Card via Stripe</li>
-          </ul>
-        </div>
-
-        <div>
-          <h2 className="footer-head">Note</h2>
-          <p className="footer-note-copy">
-            Double-check the destination address. Transfers cannot be reversed
-            after they are broadcast. This is a live on-ramp, not a testnet.
-          </p>
-        </div>
+        <p className="footer-mark" aria-hidden="true">CARD TO CRYPTO</p>
       </div>
       <div className="wrap footer-bar">
-        <span>© {new Date().getFullYear()} Card to Crypto</span>
+        <span>© {new Date().getFullYear()} Card to Crypto. All rights reserved.</span>
         <span className="footer-legal">
           <Link to="/privacy">Privacy</Link>
           <span aria-hidden="true">·</span>
           <Link to="/terms">Terms</Link>
         </span>
-        <span className="mono muted">www.tackers.xyz</span>
+        <span className="mono muted">tackers.xyz</span>
       </div>
     </footer>
   );

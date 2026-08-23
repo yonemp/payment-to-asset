@@ -2,9 +2,6 @@ export const THEME_KEY = 'pta-theme';
 
 export function resolveTheme(stored) {
   if (stored === 'dark' || stored === 'light') return stored;
-  if (typeof window !== 'undefined' && window.matchMedia('(prefers-color-scheme: dark)').matches) {
-    return 'dark';
-  }
   return 'light';
 }
 
@@ -27,7 +24,7 @@ export function applyTheme(theme) {
   document.documentElement.setAttribute('data-theme', next);
   document.documentElement.style.colorScheme = next;
   const meta = document.querySelector('meta[name="theme-color"]');
-  if (meta) meta.setAttribute('content', next === 'dark' ? '#0A0C10' : '#F7F9FD');
+  if (meta) meta.setAttribute('content', next === 'dark' ? '#0A0A0A' : '#FFFFFF');
   try {
     localStorage.setItem(THEME_KEY, next);
   } catch {

@@ -112,7 +112,7 @@ export default function Privacy() {
 
           <p className="legal-nav">
             <Link to="/terms">Terms of Use</Link>
-            <Link to="/">Back to buy</Link>
+            <Link to="/buy/sol">Back to buy</Link>
           </p>
         </div>
       </div>

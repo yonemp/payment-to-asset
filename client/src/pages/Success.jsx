@@ -57,6 +57,7 @@ export default function Success() {
     <section className="section status-page">
       <div className="wrap status-wrap">
         <div className="section-head">
+          <p className="kicker">// Order</p>
           <h1>Your order</h1>
           <p>Paid → Quoted → Broadcasting → Confirmed. This page updates until the transfer lands or fails.</p>
         </div>
@@ -64,7 +65,7 @@ export default function Success() {
         {!orderId && (
           <div className="ticket">
             <div className="banner error">No order ID in the URL.</div>
-            <Link to="/lookup" className="btn">
+            <Link to="/lookup" className="btn btn-primary">
               Look up an order
             </Link>
           </div>
@@ -106,7 +107,7 @@ export default function Success() {
                       href={explorerUrl}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="btn"
+                      className="btn btn-primary"
                     >
                       View on {meta.explorerName}
                     </a>
@@ -150,7 +151,7 @@ export default function Success() {
                 </>
               )}
               <div className="side-links">
-                <Link to="/">Buy again</Link>
+                <Link to="/buy/sol">Buy again</Link>
                 <Link to="/lookup">Look up another</Link>
               </div>
             </aside>

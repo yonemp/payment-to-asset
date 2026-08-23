@@ -25,7 +25,7 @@ export const ASSETS = [
     addressHint: '0x + 40 hex characters',
     placeholder: '0x71C7656EC7ab88b098defB751B7401B5f6d8976F',
     buyTitle: 'Buy Ethereum',
-    headline: 'Buy Ethereum (ETH) with Credit Card & Debit Card Instantly',
+    headline: 'Buy Ethereum with a card',
     eta: '~5–15 min',
   },
   {
@@ -41,7 +41,7 @@ export const ASSETS = [
     addressHint: 'Base58, 32–44 characters',
     placeholder: '7EqQdEULxWcraVx3mXKJkd8YBmFjhWFdsNaAwAZr',
     buyTitle: 'Buy Solana',
-    headline: 'Buy Solana (SOL) with Credit Card & Debit Card Instantly',
+    headline: 'Buy Solana with a card',
     eta: '~2–5 min',
   },
   {
@@ -57,7 +57,7 @@ export const ASSETS = [
     addressHint: 'bc1, 1, or 3 prefix',
     placeholder: 'bc1qxy2kgdygjrsqtzq2n0yrf2493p83kkfjhx0wlh',
     buyTitle: 'Buy Bitcoin',
-    headline: 'Buy Bitcoin (BTC) with Credit Card & Debit Card Instantly',
+    headline: 'Buy Bitcoin with a card',
     eta: '~20–60 min',
   },
 ];

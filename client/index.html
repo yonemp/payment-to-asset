@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" data-theme="light">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
@@ -8,18 +8,16 @@
       name="description"
       content="Buy Ethereum, Solana, or Bitcoin with a credit or debit card. Pay in USD, receive in your wallet."
     />
-    <meta name="theme-color" content="#F7F9FD" />
+    <meta name="theme-color" content="#FFFFFF" />
     <script>
       (function () {
         try {
           var stored = localStorage.getItem("pta-theme");
-          var theme = stored === "dark" || stored === "light"
-            ? stored
-            : (window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light");
+          var theme = stored === "dark" || stored === "light" ? stored : "light";
           document.documentElement.setAttribute("data-theme", theme);
           document.documentElement.style.colorScheme = theme;
           var meta = document.querySelector('meta[name="theme-color"]');
-          if (meta) meta.setAttribute("content", theme === "dark" ? "#0A0C10" : "#F7F9FD");
+          if (meta) meta.setAttribute("content", theme === "dark" ? "#0A0A0A" : "#FFFFFF");
         } catch (e) {}
       })();
     </script>
@@ -45,7 +43,7 @@
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
-      href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700&family=Montserrat:wght@600;700;800&display=swap"
+      href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500&family=Manrope:wght@400;500;600;700&family=Space+Grotesk:wght@500;600;700&display=swap"
       rel="stylesheet"
     />
   </head>

@@ -1,4 +1,4 @@
-export default function BrandMark({ size = 32, className = "brand-mark" }) {
+export default function BrandMark({ size = 28, className = "brand-mark" }) {
   return (
     <svg
       className={className}
@@ -7,12 +7,12 @@ export default function BrandMark({ size = 32, className = "brand-mark" }) {
       viewBox="0 0 64 64"
       aria-hidden="true"
     >
-      <rect width="64" height="64" rx="16" fill="#B1FF8C" />
+      <rect width="64" height="64" rx="14" fill="#0a0a0a" />
       <path
-        d="M20 32h20M32.5 22.5 43 32l-10.5 9.5"
+        d="M18 32h22M33 21.5 45 32l-12 10.5"
         fill="none"
-        stroke="#111827"
-        strokeWidth="4"
+        stroke="#ffffff"
+        strokeWidth="4.2"
         strokeLinecap="round"
         strokeLinejoin="round"
       />

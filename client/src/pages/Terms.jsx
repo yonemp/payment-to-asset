@@ -107,7 +107,7 @@ export default function Terms() {
 
           <p className="legal-nav">
             <Link to="/privacy">Privacy Policy</Link>
-            <Link to="/">Back to buy</Link>
+            <Link to="/buy/sol">Back to buy</Link>
           </p>
         </div>
       </div>

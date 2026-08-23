@@ -38,6 +38,7 @@ export default function Lookup() {
     <section className="section status-page">
       <div className="wrap lookup-wrap">
         <div className="section-head">
+          <p className="kicker">// Lookup</p>
           <h1>Find an order</h1>
           <p>
             Paste the order ID from the success page. We only read status — nothing is
@@ -74,7 +75,7 @@ export default function Lookup() {
                 : 'UUID from /success?order_id='}
             </p>
           </div>
-          <button type="submit" className="btn" disabled={!trimmed || loading}>
+          <button type="submit" className="btn btn-primary" disabled={!trimmed || loading}>
             {loading ? (
               <>
                 <span className="spinner" />
