@@ -116,7 +116,7 @@ export default function Home() {
     <>
       <section className="hero">
         <div className="hero-art" aria-hidden="true">
-          <img src="/hero.png" alt="" />
+          <img src="/hero.jpg" alt="" />
         </div>
         <div className="wrap hero-copy">
           <p className="eyebrow">
