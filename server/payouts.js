@@ -1,46 +1,13 @@
 /**
  * Mainnet payouts. Broadcasts real transfers; never fakes a tx hash.
- * Fail clearly if the matching hot-wallet key or RPC is missing.
+ * Heavy chain libs are lazy-required so /api/health stays up if one fails.
  */
-const { ethers } = require('ethers');
-const {
-  Connection,
-  Keypair,
-  PublicKey,
-  SystemProgram,
-  Transaction,
-  LAMPORTS_PER_SOL,
-} = require('@solana/web3.js');
-const bitcoin = require('bitcoinjs-lib');
-const { ECPairFactory } = require('ecpair');
-const ecc = require('@bitcoinerlab/secp256k1');
 const bs58 = require('bs58');
 
-bitcoin.initEccLib(ecc);
-const ECPair = ECPairFactory(ecc);
-
 const NETWORKS = {
-  ETH: {
-    id: 'ETH',
-    chainId: 1,
-    network: 'mainnet',
-    symbol: 'ETH',
-    explorerTx: (h) => `https://etherscan.io/tx/${h}`,
-  },
-  SOL: {
-    id: 'SOL',
-    chainId: null,
-    network: 'mainnet-beta',
-    symbol: 'SOL',
-    explorerTx: (h) => `https://solscan.io/tx/${h}`,
-  },
-  BTC: {
-    id: 'BTC',
-    chainId: null,
-    network: 'mainnet',
-    symbol: 'BTC',
-    explorerTx: (h) => `https://mempool.space/tx/${h}`,
-  },
+  ETH: { id: 'ETH', chainId: 1, network: 'mainnet', symbol: 'ETH', explorerTx: (h) => 'https://etherscan.io/tx/' + h },
+  SOL: { id: 'SOL', chainId: null, network: 'mainnet-beta', symbol: 'SOL', explorerTx: (h) => 'https://solscan.io/tx/' + h },
+  BTC: { id: 'BTC', chainId: null, network: 'mainnet', symbol: 'BTC', explorerTx: (h) => 'https://mempool.space/tx/' + h },
 };
 
 const ADDRESS_PATTERNS = {
@@ -49,18 +16,8 @@ const ADDRESS_PATTERNS = {
   BTC: /^(bc1|[13])[a-zA-HJ-NP-Z0-9]{25,62}$/,
 };
 
-const FALLBACK_PRICES_USD = {
-  ETH: 3200.0,
-  SOL: 145.0,
-  BTC: 65000.0,
-};
-
-const COINGECKO_IDS = {
-  ETH: 'ethereum',
-  SOL: 'solana',
-  BTC: 'bitcoin',
-};
-
+const FALLBACK_PRICES_USD = { ETH: 3200.0, SOL: 145.0, BTC: 65000.0 };
+const COINGECKO_IDS = { ETH: 'ethereum', SOL: 'solana', BTC: 'bitcoin' };
 const EXAMPLE_ETH_KEY = '0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef';
 
 function isConfiguredDummy(value) {
@@ -75,13 +32,8 @@ function envTrim(name) {
 function validateWalletAddress(asset, address) {
   const pattern = ADDRESS_PATTERNS[asset];
   if (!pattern) return { valid: false, error: 'Unsupported asset. Use ETH, SOL, or BTC' };
-  if (!address || typeof address !== 'string') {
-    return { valid: false, error: 'Wallet address required' };
-  }
-  const trimmed = address.trim();
-  if (!pattern.test(trimmed)) {
-    return { valid: false, error: `Invalid ${asset} mainnet address format` };
-  }
+  if (!address || typeof address !== 'string') return { valid: false, error: 'Wallet address required' };
+  if (!pattern.test(address.trim())) return { valid: false, error: 'Invalid ' + asset + ' mainnet address format' };
   return { valid: true };
 }
 
@@ -97,6 +49,7 @@ function payoutReady() {
 }
 
 async function sendEth({ walletAddress, cryptoAmount }) {
+  const { ethers } = require('ethers');
   const raw = envTrim('ETH_HOT_WALLET_PRIVATE_KEY') || envTrim('HOT_WALLET_PRIVATE_KEY');
   if (isConfiguredDummy(raw) || !/^(0x)?[0-9a-fA-F]{64}$/.test(raw)) {
     throw new Error('HOT_WALLET_PRIVATE_KEY (32-byte hex) is required for Ethereum mainnet payouts');
@@ -105,178 +58,162 @@ async function sendEth({ walletAddress, cryptoAmount }) {
   const provider = new ethers.JsonRpcProvider(rpc, 1);
   const network = await provider.getNetwork();
   if (Number(network.chainId) !== 1) {
-    throw new Error(`ETH_RPC_URL is not Ethereum mainnet (chainId ${network.chainId})`);
+    throw new Error('ETH_RPC_URL is not Ethereum mainnet (chainId ' + network.chainId + ')');
   }
-  const wallet = new ethers.Wallet(raw.startsWith('0x') ? raw : `0x${raw}`, provider);
+  const wallet = new ethers.Wallet(raw.startsWith('0x') ? raw : ('0x' + raw), provider);
   const value = ethers.parseEther(String(cryptoAmount));
   if (value <= 0n) throw new Error('ETH amount is too small to send');
   const tx = await wallet.sendTransaction({ to: walletAddress, value, chainId: 1 });
   return { txHash: tx.hash };
 }
 
+function compactU16(n) {
+  const out = [];
+  let rem = n >>> 0;
+  while (true) {
+    let elem = rem & 0x7f;
+    rem >>>= 7;
+    if (rem === 0) { out.push(elem); break; }
+    out.push(elem | 0x80);
+  }
+  return Buffer.from(out);
+}
+
 function loadSolanaKeypair() {
+  const nacl = require('tweetnacl');
   const raw = envTrim('SOL_HOT_WALLET_SECRET') || envTrim('HOT_WALLET_PRIVATE_KEY');
-  if (isConfiguredDummy(raw)) {
-    throw new Error('SOL_HOT_WALLET_SECRET is required for Solana mainnet payouts');
-  }
+  if (isConfiguredDummy(raw)) throw new Error('SOL_HOT_WALLET_SECRET is required for Solana mainnet payouts');
+  let secret;
   if (raw.startsWith('[')) {
-    const bytes = Uint8Array.from(JSON.parse(raw));
-    return Keypair.fromSecretKey(bytes);
+    secret = Uint8Array.from(JSON.parse(raw));
+  } else {
+    const hex = raw.replace(/^0x/i, '');
+    if (/^[0-9a-fA-F]{128}$/.test(hex)) {
+      secret = Uint8Array.from(Buffer.from(hex, 'hex'));
+    } else if (/^[0-9a-fA-F]{64}$/.test(hex)) {
+      secret = nacl.sign.keyPair.fromSeed(Uint8Array.from(Buffer.from(hex, 'hex'))).secretKey;
+    } else {
+      try { secret = Uint8Array.from(bs58.decode(raw)); }
+      catch (err) { throw new Error('SOL_HOT_WALLET_SECRET must be a Solana secret key (base58, hex, or JSON byte array)'); }
+    }
   }
-  const hex = raw.replace(/^0x/i, '');
-  if (/^[0-9a-fA-F]{128}$/.test(hex)) {
-    return Keypair.fromSecretKey(Buffer.from(hex, 'hex'));
+  if (secret.length === 32) secret = nacl.sign.keyPair.fromSeed(secret).secretKey;
+  if (secret.length !== 64) throw new Error('SOL_HOT_WALLET_SECRET must decode to 32 or 64 bytes');
+  const pair = nacl.sign.keyPair.fromSecretKey(secret);
+  return { secretKey: pair.secretKey, publicKey: Buffer.from(pair.publicKey) };
+}
+
+async function solRpc(method, params) {
+  const rpc = envTrim('SOL_RPC_URL') || 'https://api.mainnet-beta.solana.com';
+  const res = await fetch(rpc, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ jsonrpc: "2.0", id: 1, method, params }),
+  });
+  const body = await res.json();
+  if (!res.ok || body.error) {
+    throw new Error('Solana RPC ' + method + ' failed: ' + ((body.error && body.error.message) || res.status));
   }
-  if (/^[0-9a-fA-F]{64}$/.test(hex)) {
-    return Keypair.fromSeed(Buffer.from(hex, 'hex'));
-  }
-  try {
-    return Keypair.fromSecretKey(bs58.decode(raw));
-  } catch {
-    throw new Error('SOL_HOT_WALLET_SECRET must be a Solana secret key (base58, hex, or JSON byte array)');
-  }
+  return body.result;
 }
 
 async function sendSol({ walletAddress, cryptoAmount }) {
-  const keypair = loadSolanaKeypair();
-  const rpc = envTrim('SOL_RPC_URL') || 'https://api.mainnet-beta.solana.com';
-  const connection = new Connection(rpc, 'confirmed');
-  const toPubkey = new PublicKey(walletAddress);
-  const lamports = Math.round(Number(cryptoAmount) * LAMPORTS_PER_SOL);
-  if (!Number.isFinite(lamports) || lamports <= 0) {
-    throw new Error('SOL amount is too small to send');
-  }
-  const tx = new Transaction().add(
-    SystemProgram.transfer({
-      fromPubkey: keypair.publicKey,
-      toPubkey,
-      lamports,
-    })
-  );
-  tx.feePayer = keypair.publicKey;
-  const { blockhash, lastValidBlockHeight } = await connection.getLatestBlockhash('confirmed');
-  tx.recentBlockhash = blockhash;
-  tx.sign(keypair);
-  const sig = await connection.sendRawTransaction(tx.serialize(), {
-    skipPreflight: false,
-    preflightCommitment: 'confirmed',
-  });
-  // Do not wait for full confirmation — serverless time budget.
-  void lastValidBlockHeight;
-  return { txHash: sig };
+  const nacl = require('tweetnacl');
+  const kp = loadSolanaKeypair();
+  let toPub;
+  try { toPub = Buffer.from(bs58.decode(walletAddress)); }
+  catch (err) { throw new Error('Invalid Solana destination address'); }
+  if (toPub.length !== 32) throw new Error('Invalid Solana destination address');
+  const lamports = Math.round(Number(cryptoAmount) * 1e9);
+  if (!Number.isFinite(lamports) || lamports <= 0) throw new Error('SOL amount is too small to send');
+  const latest = await solRpc('getLatestBlockhash', [{ commitment: 'confirmed' }]);
+  const blockhash = latest && latest.value ? latest.value.blockhash : latest && latest.blockhash;
+  if (!blockhash) throw new Error('Solana getLatestBlockhash returned no blockhash');
+  const recent = Buffer.from(bs58.decode(blockhash));
+  if (recent.length !== 32) throw new Error('Invalid Solana blockhash');
+  const systemProgram = Buffer.alloc(32);
+  const data = Buffer.alloc(12);
+  data.writeUInt32LE(2, 0);
+  data.writeBigUInt64LE(BigInt(lamports), 4);
+  const ix = Buffer.concat([Buffer.from([2]), compactU16(2), Buffer.from([0, 1]), compactU16(data.length), data]);
+  const message = Buffer.concat([Buffer.from([1, 0, 1]), compactU16(3), kp.publicKey, toPub, systemProgram, recent, compactU16(1), ix]);
+  const sig = Buffer.from(nacl.sign.detached(message, kp.secretKey));
+  const raw = Buffer.concat([compactU16(1), sig, message]);
+  const sigB58 = await solRpc('sendTransaction', [raw.toString('base64'), { encoding: 'base64', preflightCommitment: 'confirmed' }]);
+  if (!sigB58) throw new Error('Solana sendTransaction returned empty signature');
+  return { txHash: sigB58 };
 }
 
 async function fetchJson(url, init) {
   const res = await fetch(url, init);
   const text = await res.text();
-  if (!res.ok) throw new Error(`${url} -> ${res.status} ${text.slice(0, 180)}`);
+  if (!res.ok) throw new Error(url + ' -> ' + res.status + ' ' + text.slice(0, 180));
   if (!text) return null;
-  try {
-    return JSON.parse(text);
-  } catch {
-    return text;
-  }
+  try { return JSON.parse(text); } catch (err) { return text; }
 }
 
 async function sendBtc({ walletAddress, cryptoAmount }) {
+  const bitcoin = require('bitcoinjs-lib');
+  const { ECPairFactory } = require('ecpair');
+  const ecc = require('@bitcoinerlab/secp256k1');
+  bitcoin.initEccLib(ecc);
+  const ECPair = ECPairFactory(ecc);
   const wif = envTrim('BTC_HOT_WALLET_WIF');
-  if (!wif) {
-    throw new Error('BTC_HOT_WALLET_WIF (mainnet WIF) is required for Bitcoin mainnet payouts');
-  }
+  if (!wif) throw new Error('BTC_HOT_WALLET_WIF (mainnet WIF) is required for Bitcoin mainnet payouts');
   const network = bitcoin.networks.bitcoin;
   let keyPair;
-  try {
-    keyPair = ECPair.fromWIF(wif, network);
-  } catch {
-    throw new Error('BTC_HOT_WALLET_WIF must be a Bitcoin mainnet WIF private key');
-  }
-
+  try { keyPair = ECPair.fromWIF(wif, network); }
+  catch (err) { throw new Error('BTC_HOT_WALLET_WIF must be a Bitcoin mainnet WIF private key'); }
   const pubkey = Buffer.from(keyPair.publicKey);
-  const payment = keyPair.compressed
-    ? bitcoin.payments.p2wpkh({ pubkey, network })
-    : bitcoin.payments.p2pkh({ pubkey, network });
+  const payment = keyPair.compressed ? bitcoin.payments.p2wpkh({ pubkey, network }) : bitcoin.payments.p2pkh({ pubkey, network });
   const fromAddress = payment.address;
   if (!fromAddress) throw new Error('Could not derive Bitcoin hot-wallet address');
-
   const api = (envTrim('BTC_API_URL') || 'https://mempool.space/api').replace(/\/$/, '');
-  const utxos = await fetchJson(`${api}/address/${fromAddress}/utxo`);
-  if (!Array.isArray(utxos) || utxos.length === 0) {
-    throw new Error(`No Bitcoin UTXOs available for hot wallet ${fromAddress}`);
-  }
-
+  const utxos = await fetchJson(api + '/address/' + fromAddress + '/utxo');
+  if (!Array.isArray(utxos) || utxos.length === 0) throw new Error('No Bitcoin UTXOs available for hot wallet ' + fromAddress);
   const satoshis = Math.round(Number(cryptoAmount) * 1e8);
-  if (!Number.isFinite(satoshis) || satoshis < 546) {
-    throw new Error('BTC amount is below the dust limit');
-  }
-
+  if (!Number.isFinite(satoshis) || satoshis < 546) throw new Error('BTC amount is below the dust limit');
   let feeRate = 8;
   try {
-    const fees = await fetchJson(`${api}/v1/fees/recommended`);
+    const fees = await fetchJson(api + '/v1/fees/recommended');
     if (fees && Number(fees.halfHourFee) > 0) feeRate = Number(fees.halfHourFee);
-  } catch {
+  } catch (err) {
     try {
-      const estimates = await fetchJson(`${api}/fee-estimates`);
+      const estimates = await fetchJson(api + '/fee-estimates');
       const v = estimates && (estimates['3'] || estimates['6']);
       if (Number(v) > 0) feeRate = Number(v);
-    } catch {
-      /* keep default */
-    }
+    } catch (err2) { /* default */ }
   }
-
-  const sorted = [...utxos].sort((a, b) => b.value - a.value);
+  const sorted = utxos.slice().sort((a, b) => b.value - a.value);
   const selected = [];
   let totalIn = 0;
-  const outCount = 2;
-  const vbytesFor = (nIn) => Math.ceil(10.5 + nIn * (keyPair.compressed ? 68 : 148) + outCount * 31);
+  const vbytesFor = (nIn) => Math.ceil(10.5 + nIn * (keyPair.compressed ? 68 : 148) + 62);
   for (const u of sorted) {
     selected.push(u);
     totalIn += Number(u.value);
-    const fee = vbytesFor(selected.length) * feeRate;
-    if (totalIn >= satoshis + fee) break;
+    if (totalIn >= satoshis + vbytesFor(selected.length) * feeRate) break;
   }
   const fee = vbytesFor(selected.length) * feeRate;
-  if (totalIn < satoshis + fee) {
-    throw new Error(`Insufficient Bitcoin hot-wallet balance (need ${satoshis + fee} sats, have ${totalIn})`);
-  }
-
+  if (totalIn < satoshis + fee) throw new Error('Insufficient Bitcoin hot-wallet balance (need ' + (satoshis + fee) + ' sats, have ' + totalIn + ')');
   const psbt = new bitcoin.Psbt({ network });
   for (const u of selected) {
-    const prevHex = await fetchJson(`${api}/tx/${u.txid}/hex`);
-    if (typeof prevHex !== 'string' || !/^[0-9a-fA-F]+$/.test(prevHex)) {
-      throw new Error(`Could not load previous Bitcoin tx ${u.txid}`);
-    }
-    const input = {
-      hash: u.txid,
-      index: u.vout,
-      nonWitnessUtxo: Buffer.from(prevHex, 'hex'),
-    };
-    if (keyPair.compressed) {
-      input.witnessUtxo = { script: payment.output, value: Number(u.value) };
-    }
+    const prevHex = await fetchJson(api + '/tx/' + u.txid + '/hex');
+    if (typeof prevHex !== 'string' || !/^[0-9a-fA-F]+$/.test(prevHex)) throw new Error('Could not load previous Bitcoin tx ' + u.txid);
+    const input = { hash: u.txid, index: u.vout, nonWitnessUtxo: Buffer.from(prevHex, 'hex') };
+    if (keyPair.compressed) input.witnessUtxo = { script: payment.output, value: Number(u.value) };
     psbt.addInput(input);
   }
   psbt.addOutput({ address: walletAddress, value: satoshis });
   const change = totalIn - satoshis - fee;
-  if (change >= 546) {
-    psbt.addOutput({ address: fromAddress, value: change });
-  }
+  if (change >= 546) psbt.addOutput({ address: fromAddress, value: change });
   psbt.signAllInputs(keyPair);
   psbt.finalizeAllInputs();
   const rawTx = psbt.extractTransaction().toHex();
-
-  const broadcast = await fetch(`${api}/tx`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'text/plain' },
-    body: rawTx,
-  });
+  const broadcast = await fetch(api + '/tx', { method: 'POST', headers: { 'Content-Type': 'text/plain' }, body: rawTx });
   const body = await broadcast.text();
-  if (!broadcast.ok) {
-    throw new Error(`Bitcoin broadcast failed: ${broadcast.status} ${body.slice(0, 180)}`);
-  }
+  if (!broadcast.ok) throw new Error('Bitcoin broadcast failed: ' + broadcast.status + ' ' + body.slice(0, 180));
   const txHash = body.trim();
-  if (!/^[0-9a-fA-F]{64}$/.test(txHash)) {
-    throw new Error(`Bitcoin broadcast returned an unexpected payload: ${txHash.slice(0, 80)}`);
-  }
+  if (!/^[0-9a-fA-F]{64}$/.test(txHash)) throw new Error('Bitcoin broadcast returned an unexpected payload: ' + txHash.slice(0, 80));
   return { txHash };
 }
 
@@ -284,12 +221,10 @@ async function sendPayout({ asset, cryptoAmount, walletAddress }) {
   const addr = validateWalletAddress(asset, walletAddress);
   if (!addr.valid) throw new Error(addr.error);
   const amount = Number(cryptoAmount);
-  if (!Number.isFinite(amount) || amount <= 0) {
-    throw new Error('Invalid payout amount');
-  }
-  if (asset === 'ETH') return sendEth({ walletAddress: walletAddress.trim(), cryptoAmount: amount });
-  if (asset === 'SOL') return sendSol({ walletAddress: walletAddress.trim(), cryptoAmount: amount });
-  if (asset === 'BTC') return sendBtc({ walletAddress: walletAddress.trim(), cryptoAmount: amount });
+  if (!Number.isFinite(amount) || amount <= 0) throw new Error('Invalid payout amount');
+  if (asset === "ETH") return sendEth({ walletAddress: walletAddress.trim(), cryptoAmount: amount });
+  if (asset === "SOL") return sendSol({ walletAddress: walletAddress.trim(), cryptoAmount: amount });
+  if (asset === "BTC") return sendBtc({ walletAddress: walletAddress.trim(), cryptoAmount: amount });
   throw new Error('Unsupported asset');
 }
 
