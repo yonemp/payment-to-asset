@@ -24,6 +24,9 @@ export const ASSETS = [
     explorer: (h) => `https://etherscan.io/tx/${h}`,
     addressHint: '0x + 40 hex characters',
     placeholder: '0x71C7656EC7ab88b098defB751B7401B5f6d8976F',
+    buyTitle: 'Buy Ethereum',
+    headline: 'Buy Ethereum (ETH) with Credit Card & Debit Card Instantly',
+    eta: '~5–15 min',
   },
   {
     value: 'SOL',
@@ -37,6 +40,9 @@ export const ASSETS = [
     explorer: (h) => `https://solscan.io/tx/${h}`,
     addressHint: 'Base58, 32–44 characters',
     placeholder: '7EqQdEULxWcraVx3mXKJkd8YBmFjhWFdsNaAwAZr',
+    buyTitle: 'Buy Solana',
+    headline: 'Buy Solana (SOL) with Credit Card & Debit Card Instantly',
+    eta: '~2–5 min',
   },
   {
     value: 'BTC',
@@ -50,6 +56,9 @@ export const ASSETS = [
     explorer: (h) => `https://mempool.space/tx/${h}`,
     addressHint: 'bc1, 1, or 3 prefix',
     placeholder: 'bc1qxy2kgdygjrsqtzq2n0yrf2493p83kkfjhx0wlh',
+    buyTitle: 'Buy Bitcoin',
+    headline: 'Buy Bitcoin (BTC) with Credit Card & Debit Card Instantly',
+    eta: '~20–60 min',
   },
 ];
 

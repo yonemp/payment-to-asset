@@ -7,7 +7,7 @@ export default function WalletField({ asset, value, onChange, disabled }) {
   return (
     <div className="field">
       <label htmlFor="wallet" className="field-label">
-        Destination <span className="muted">{meta.symbol} address</span>
+        Wallet address
       </label>
       <input
         id="wallet"

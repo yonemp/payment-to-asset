@@ -4,17 +4,14 @@ import AmountField from '../components/AmountField';
 import AssetGlyph from '../components/AssetGlyph';
 import AssetPicker from '../components/AssetPicker';
 import FeeTicket from '../components/FeeTicket';
-import MetricRack from '../components/MetricRack';
-import RadarBg from '../components/RadarBg';
-import StatusCard from '../components/StatusCard';
 import WalletField from '../components/WalletField';
-import { createPayment, fetchHealth, fetchQuote } from '../lib/api';
-import { ASSETS, feeMath, formatCrypto, getAsset, MAX_USD, MIN_USD, validateAddress } from '../lib/assets';
+import { createPayment, fetchQuote } from '../lib/api';
+import { ASSETS, feeMath, formatUsd, getAsset, MAX_USD, MIN_USD, validateAddress } from '../lib/assets';
 
 const FAQ = [
   {
     q: 'How fast is delivery?',
-    a: 'Stripe confirms first. The payout then broadcasts on the selected mainnet. Ethereum and Solana are typically minutes; Bitcoin depends on mempool conditions.',
+    a: 'You pay on Stripe first. After the card confirms we broadcast the asset on the selected mainnet. Ethereum and Solana are typically minutes; Bitcoin depends on mempool conditions.',
   },
   {
     q: 'What is the fee?',
@@ -22,17 +19,45 @@ const FAQ = [
   },
   {
     q: 'Which networks are supported?',
-    a: 'Ethereum mainnet (chainId 1), Solana mainnet-beta, and Bitcoin mainnet. There is no testnet path.',
+    a: 'Ethereum mainnet, Solana mainnet, and Bitcoin mainnet. There is no testnet path.',
   },
   {
     q: 'What if I enter the wrong address?',
-    a: 'The form checks format and length before checkout. After a transfer is broadcast, it cannot be reversed. Double-check the destination.',
+    a: 'The form checks format and length before checkout. After a transfer is broadcast it cannot be reversed. Double-check the destination.',
   },
   {
-    q: 'Do you show live balances or prices?',
-    a: 'The ticket can show a server quote from the same rate source used at payout. If a quote is unavailable, you still see fee math — never a fabricated coin amount.',
+    q: 'Where does the quote come from?',
+    a: 'The estimated amount is a live server quote from the same rate source used at payout. If a quote is unavailable we do not invent a coin amount.',
   },
 ];
+
+function ChipRow({ value, onChange, disabled }) {
+  const n = Number(value);
+  const chips = [25, 50, 100, 250];
+  return (
+    <div className="chip-row" role="group" aria-label="Suggested amounts">
+      {chips.map((amt) => (
+        <button
+          key={amt}
+          type="button"
+          className={`chip${n === amt ? ' selected' : ''}`}
+          onClick={() => onChange(String(amt))}
+          disabled={disabled}
+        >
+          ${amt}
+        </button>
+      ))}
+    </div>
+  );
+}
+
+function formatGet(amount) {
+  const n = Number(amount);
+  if (!Number.isFinite(n)) return '—';
+  if (n >= 100) return `~ ${n.toFixed(2)}`;
+  if (n >= 1) return `~ ${n.toFixed(4)}`;
+  return `~ ${n.toFixed(6)}`;
+}
 
 export default function Home() {
   const [searchParams] = useSearchParams();
@@ -44,7 +69,6 @@ export default function Home() {
   const [openFaq, setOpenFaq] = useState(0);
   const [quote, setQuote] = useState(null);
   const [quoteState, setQuoteState] = useState('idle');
-  const [health, setHealth] = useState(null);
 
   const meta = getAsset(asset);
   const fees = useMemo(() => feeMath(usd), [usd]);
@@ -54,24 +78,14 @@ export default function Home() {
   const canPay = addr.ok && amountOk && !loading;
 
   useEffect(() => {
-    if (searchParams.get('canceled') === '1') {
-      setError('Payment canceled. The ticket is still here if you want to continue.');
-    }
-  }, [searchParams]);
+    document.title = `${meta.buyTitle} — Pay → Asset`;
+  }, [meta.buyTitle]);
 
   useEffect(() => {
-    let ignore = false;
-    fetchHealth()
-      .then((data) => {
-        if (!ignore) setHealth(data);
-      })
-      .catch(() => {
-        if (!ignore) setHealth(null);
-      });
-    return () => {
-      ignore = true;
-    };
-  }, []);
+    if (searchParams.get('canceled') === '1') {
+      setError('Payment canceled. You can adjust the ticket and try again.');
+    }
+  }, [searchParams]);
 
   useEffect(() => {
     if (!amountOk) {
@@ -118,157 +132,177 @@ export default function Home() {
 
   const recvAmount =
     quoteState === 'ready' && quote
-      ? formatCrypto(quote.cryptoAmount, asset)
+      ? formatGet(quote.cryptoAmount)
       : quoteState === 'loading'
         ? 'Quoting…'
         : '—';
 
+  const offerAmt =
+    quoteState === 'ready' && quote ? formatGet(quote.cryptoAmount) : '—';
+
   return (
     <>
-      <section className="hero" id="checkout">
-        <RadarBg />
-        <div className="wrap hero-stack">
-          <div className="hero-copy">
-            <p className="live-badge">
-              <span className="live-dot" />
-              card → mainnet
-            </p>
-            <h1 className="hero-word">CONVERT</h1>
-            <p className="hero-sub">
-              pay in <em className="c-pink">dollars</em>. settle on{' '}
-              <em className="c-cyan">mainnet</em>. receive <em className="c-lime">on-chain</em>.
-            </p>
-            <p className="lede">
-              Stripe Checkout for ETH, SOL, or BTC. Destination is yours. Settlement is on
-              mainnet — not a voucher, not a testnet, not a simulated balance.
-            </p>
-            <div className="hero-actions">
-              <a href="#ticket" className="btn">
-                Open ticket →
-              </a>
-              <a href="#how" className="btn btn-ghost">
-                See the path
-              </a>
+      <section className="buy-hero" id="checkout">
+        <div className="wrap buy-hero-inner">
+          <h1 className="buy-title">{meta.headline}</h1>
+
+          <p className="buy-price">
+            <AssetGlyph tint={meta.tint} size={22} />
+            <span className="px">
+              {quoteState === 'ready' && quote?.priceUsd
+                ? formatUsd(quote.priceUsd)
+                : quoteState === 'loading'
+                  ? 'Live price…'
+                  : `${meta.symbol} live price`}
+            </span>
+          </p>
+
+          <p className="buy-lede">
+            Buy {meta.name} ({meta.symbol}) with a credit or debit card in three
+            steps. Pay in USD, receive on {meta.network}.
+          </p>
+
+          <ul className="buy-checks">
+            <li><span className="chk" aria-hidden="true">✓</span> Card checkout via Stripe</li>
+            <li><span className="chk" aria-hidden="true">✓</span> Mainnet delivery to your wallet</li>
+            <li><span className="chk" aria-hidden="true">✓</span> 2% service fee, live quote</li>
+          </ul>
+
+          <form className="buy-card" onSubmit={handlePay}>
+            <div className="step-head">
+              <p>1/3 Select pair</p>
+              <span className="step-help" title="Choose how much you pay and which asset you get.">?</span>
             </div>
-          </div>
+            <div className="step-bar" aria-hidden="true">
+              <i className="on" />
+              <i />
+              <i />
+            </div>
 
-          <div className="hero-widgets">
-            <StatusCard health={health} />
-
-            <form id="ticket" className="ticket ticket-float" onSubmit={handlePay}>
-              <div className="ticket-top">
-                <span className="ticket-kicker">You pay → they receive</span>
-                <span className="pill">{meta.symbol} · mainnet</span>
+            {error && (
+              <div className="banner error" role="alert">
+                {error}
               </div>
+            )}
 
-              {error && (
-                <div className="banner error" role="alert">
-                  {error}
-                </div>
-              )}
-
-              <div className="xfer">
-                <div className="xfer-pane">
-                  <span className="xfer-label">You pay</span>
+            <div className="xfer">
+              <div className="xfer-pane">
+                <span className="xfer-label">You send</span>
+                <div className="xfer-row">
+                  <div className="pair-left">
+                    <span className="pair-code">
+                      <svg className="flag" viewBox="0 0 24 24" aria-hidden="true">
+                        <rect width="24" height="24" rx="12" fill="#3c3b6e" />
+                        <rect y="9" width="24" height="3" fill="#fff" />
+                        <rect y="15" width="24" height="3" fill="#b22234" />
+                        <rect y="6" width="24" height="3" fill="#b22234" />
+                        <rect width="11" height="10" fill="#3c3b6e" />
+                      </svg>
+                      USD
+                      <span className="chev">▾</span>
+                    </span>
+                    <span className="pair-name">US Dollar</span>
+                  </div>
                   <AmountField value={usd} onChange={setUsd} disabled={loading} />
                 </div>
-                <div className="xfer-swap" aria-hidden="true">↓</div>
-                <div className="xfer-pane">
-                  <span className="xfer-label">They receive</span>
-                  <div className="recv">
-                    <span className="recv-amt">{recvAmount}</span>
-                    <span className="recv-meta">
-                      {quoteState === 'ready' && quote?.priceUsd
-                        ? `live · ${asset}`
-                        : 'sized at payout'}
-                    </span>
-                  </div>
-                </div>
+                <ChipRow value={usd} onChange={setUsd} disabled={loading} />
               </div>
 
-              <AssetPicker value={asset} onChange={setAsset} disabled={loading} />
-              <WalletField asset={asset} value={wallet} onChange={setWallet} disabled={loading} />
-              <FeeTicket asset={asset} fees={fees} quote={quote} quoteState={quoteState} />
+              <div className="xfer-pane">
+                <span className="xfer-label">You get</span>
+                <div className="xfer-row">
+                  <AssetPicker value={asset} onChange={setAsset} disabled={loading} />
+                  <span className={`recv-amt${quoteState === 'ready' ? '' : ' is-wait'}`}>
+                    {recvAmount}
+                  </span>
+                </div>
+              </div>
+            </div>
 
-              <button type="submit" className="btn btn-pay" disabled={!canPay}>
-                {loading ? (
-                  <>
-                    <span className="spinner" />
-                    Opening Stripe…
-                  </>
-                ) : (
-                  <>Pay now{amountOk ? ` · $${usdNum.toFixed(2)}` : ''} →</>
-                )}
-              </button>
-              <p className="fineprint">
-                You will pay on Stripe. We broadcast {meta.symbol} to the address above after
-                the payment confirms.
-              </p>
-            </form>
+            <div className="pay-with">
+              <div className="pay-with-head">
+                <span>Pay with</span>
+                <span>Card · Stripe</span>
+              </div>
+              <div className="offer-row">
+                <span className="offer-logo" aria-hidden="true">S</span>
+                <div className="offer-copy">
+                  <strong>Stripe</strong>
+                  <span>Credit / debit card</span>
+                </div>
+                <span className="offer-amt">{offerAmt}</span>
+              </div>
+            </div>
 
-            <MetricRack asset={asset} fees={fees} quote={quote} quoteState={quoteState} />
-          </div>
-        </div>
+            <WalletField asset={asset} value={wallet} onChange={setWallet} disabled={loading} />
 
-        <div className="trust-bar">
-          <p>Settlement rails</p>
-          <div className="trust-logos">
+            <button type="submit" className="btn btn-pay" disabled={!canPay}>
+              {loading ? (
+                <>
+                  <span className="spinner" />
+                  Opening Stripe…
+                </>
+              ) : (
+                `Buy ${meta.symbol}`
+              )}
+            </button>
+
+            <FeeTicket asset={asset} fees={fees} quote={quote} quoteState={quoteState} />
+          </form>
+
+          <div className="pay-logos" aria-label="Payment">
             <span>Stripe</span>
-            <span>ETH mainnet</span>
-            <span>SOL mainnet</span>
-            <span>BTC mainnet</span>
-            <span>2% fee</span>
+            <span>Card</span>
           </div>
         </div>
       </section>
 
-      <section id="how" className="section how">
+      <section id="how" className="section">
         <div className="wrap">
           <div className="section-head center">
-            <p className="eyebrow">Path</p>
-            <h2>four steps. no theater.</h2>
+            <h2>How to buy {meta.name} ({meta.symbol}) with a credit and debit card</h2>
+            <p>Four steps from USD to a mainnet wallet. No extra apps.</p>
           </div>
           <ol className="how-grid">
             <li>
-              <span className="how-num">01</span>
-              <h3>ticket</h3>
-              <p>Pick ETH, SOL, or BTC. Enter a mainnet address and a USD amount.</p>
+              <span className="how-num">1</span>
+              <h3>Set the pair</h3>
+              <p>Choose {meta.name}, enter how much USD you want to spend, and review the live quote.</p>
             </li>
             <li>
-              <span className="how-num">02</span>
-              <h3>pay</h3>
-              <p>Stripe Checkout takes the card. The order is stored as pending until the webhook fires.</p>
+              <span className="how-num">2</span>
+              <h3>Enter your wallet address</h3>
+              <p>Provide a {meta.network} address. Make sure the wallet supports {meta.symbol} on mainnet.</p>
             </li>
             <li>
-              <span className="how-num">03</span>
-              <h3>convert</h3>
-              <p>Net of the 2% fee, USD is sized at the live rate used by the payout desk.</p>
+              <span className="how-num">3</span>
+              <h3>Pay with your card</h3>
+              <p>Continue to Stripe Checkout to pay with a credit or debit card. The order is stored as pending until the payment confirms.</p>
             </li>
             <li>
-              <span className="how-num">04</span>
-              <h3>broadcast</h3>
-              <p>A real mainnet transfer. The success page links the explorer when the hash exists.</p>
+              <span className="how-num">✓</span>
+              <h3>Confirm your payment</h3>
+              <p>After Stripe confirms we broadcast {meta.symbol} to your address. The success page links the explorer when the hash exists.</p>
             </li>
           </ol>
         </div>
       </section>
 
-      <section id="networks" className="section networks">
+      <section id="networks" className="section" style={{ paddingTop: 0 }}>
         <div className="wrap">
           <div className="section-head center">
-            <p className="eyebrow">Rails</p>
-            <h2>three mainnets. nothing else.</h2>
+            <h2>Networks we deliver on</h2>
+            <p>Three mainnets. Destination is yours.</p>
           </div>
           <div className="net-grid">
             {ASSETS.map((a) => (
-              <article key={a.value} className={`net-card tint-${a.tint}`}>
+              <article key={a.value} className="net-card">
                 <AssetGlyph tint={a.tint} size={40} />
                 <h3>
                   {a.symbol} <span>{a.name}</span>
                 </h3>
                 <ul>
                   <li>{a.network}</li>
-                  <li>{a.chain}</li>
                   <li>Address · {a.addressHint}</li>
                   <li>Explorer · {a.explorerName}</li>
                 </ul>
@@ -278,11 +312,44 @@ export default function Home() {
         </div>
       </section>
 
-      <section id="faq" className="section faq">
+      <section className="section" style={{ paddingTop: 0 }}>
+        <div className="wrap">
+          <div className="section-head center">
+            <h2>What can I do after I buy {meta.name}?</h2>
+          </div>
+          <div className="after-grid">
+            <article className="after-card">
+              <svg className="ico" viewBox="0 0 32 32" fill="none" aria-hidden="true">
+                <circle cx="16" cy="10" r="5" stroke="currentColor" strokeWidth="1.6" />
+                <circle cx="11" cy="20" r="4" stroke="currentColor" strokeWidth="1.6" />
+                <circle cx="21" cy="20" r="4" stroke="currentColor" strokeWidth="1.6" />
+              </svg>
+              <h3>Hold</h3>
+              <p>Keep {meta.symbol} in the wallet you entered — yours, not a custodial balance on this site.</p>
+            </article>
+            <article className="after-card">
+              <svg className="ico" viewBox="0 0 32 32" fill="none" aria-hidden="true">
+                <path d="M6 16h16M16 8l10 8-10 8" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
+              </svg>
+              <h3>Send</h3>
+              <p>Once it lands on-chain you can send {meta.symbol} to anyone whose wallet supports the same network.</p>
+            </article>
+            <article className="after-card">
+              <svg className="ico" viewBox="0 0 32 32" fill="none" aria-hidden="true">
+                <path d="M8 22h16M8 16h16M12 10h8" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" />
+              </svg>
+              <h3>Use</h3>
+              <p>Spend, swap, or hold — we only deliver the asset. What you do next is up to you.</p>
+            </article>
+          </div>
+        </div>
+      </section>
+
+      <section id="faq" className="section" style={{ paddingTop: 0 }}>
         <div className="wrap faq-grid">
           <div className="section-head">
-            <p className="eyebrow">Questions</p>
-            <h2>before you pay.</h2>
+            <h2>Frequently asked questions</h2>
+            <p>Before you pay.</p>
           </div>
           <div>
             {FAQ.map((item, i) => {

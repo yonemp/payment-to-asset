@@ -13,36 +13,37 @@ export default function Footer() {
             </span>
           </div>
           <p>
-            Card payment, mainnet delivery. ETH, SOL, and BTC settle on-chain after Stripe
-            confirms. A 2% service fee is taken before conversion.
+            Buy ETH, SOL, or BTC with a card. You pay in USD, we send the asset
+            to your wallet after Stripe confirms. A 2% service fee is taken from
+            the amount you enter.
           </p>
         </div>
 
         <div>
           <h2 className="footer-head">Product</h2>
           <ul>
-            <li><a href="/#checkout">Checkout</a></li>
-            <li><a href="/#how">Path</a></li>
+            <li><a href="/#checkout">Buy</a></li>
+            <li><a href="/#how">How it works</a></li>
             <li><a href="/#networks">Networks</a></li>
             <li><Link to="/lookup">Order lookup</Link></li>
           </ul>
         </div>
 
         <div>
-          <h2 className="footer-head">Settlement</h2>
+          <h2 className="footer-head">Networks</h2>
           <ul>
-            <li>Ethereum · chainId 1</li>
-            <li>Solana · mainnet-beta</li>
+            <li>Ethereum · mainnet</li>
+            <li>Solana · mainnet</li>
             <li>Bitcoin · mainnet</li>
-            <li>Stripe Checkout</li>
+            <li>Card via Stripe</li>
           </ul>
         </div>
 
         <div>
           <h2 className="footer-head">Note</h2>
           <p className="footer-note-copy">
-            Addresses are validated before checkout. A mistyped destination cannot be reversed
-            after broadcast. Production funds only — this is not a testnet.
+            Double-check the destination address. Transfers cannot be reversed
+            after they are broadcast. This is a live on-ramp, not a testnet.
           </p>
         </div>
       </div>

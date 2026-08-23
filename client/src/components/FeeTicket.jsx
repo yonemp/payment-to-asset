@@ -1,40 +1,28 @@
-import { formatCrypto, formatUsd } from '../lib/assets';
+import { formatUsd, getAsset } from '../lib/assets';
 
 export default function FeeTicket({ asset, fees, quote, quoteState }) {
+  const meta = getAsset(asset);
+  const rate =
+    quoteState === 'ready' && quote?.priceUsd
+      ? `1 ${asset} ≈ ${formatUsd(quote.priceUsd)}`
+      : quoteState === 'loading'
+        ? 'Fetching live rate…'
+        : 'Rate locked at checkout';
+
   return (
-    <div className="ticket-break" aria-live="polite">
-      <div className="detail-row">
-        <span>You pay</span>
-        <span>{formatUsd(fees.gross)}</span>
+    <div className="buy-meta" aria-live="polite">
+      <div className="buy-meta-row">
+        <span>Rate</span>
+        <span>{rate}</span>
       </div>
-      <div className="detail-row">
-        <span>Service fee · 2%</span>
-        <span className="muted">−{formatUsd(fees.fee)}</span>
+      <div className="buy-meta-row">
+        <span>Service fee</span>
+        <span>2%{fees.fee ? ` · ${formatUsd(fees.fee)}` : ''}</span>
       </div>
-      <div className="detail-row">
-        <span>Net converted</span>
-        <span className="accent">{formatUsd(fees.net)}</span>
+      <div className="buy-meta-row">
+        <span>Estimated time</span>
+        <span>{meta.eta}</span>
       </div>
-      <div className="detail-row">
-        <span>Estimated {asset}</span>
-        <span className="mono">
-          {quoteState === 'ready' && quote
-            ? formatCrypto(quote.cryptoAmount, asset)
-            : quoteState === 'loading'
-              ? 'Quoting…'
-              : 'Converted at payout'}
-        </span>
-      </div>
-      {quoteState === 'ready' && quote?.priceUsd ? (
-        <p className="hint">
-          Indicative at {formatUsd(quote.priceUsd)} / {asset}. Locked when you start checkout.
-        </p>
-      ) : (
-        <p className="hint">
-          Asset amount is calculated at payout from the live rate. No estimated size is shown
-          unless the server returns a quote.
-        </p>
-      )}
     </div>
   );
 }

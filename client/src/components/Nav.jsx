@@ -13,15 +13,16 @@ export default function Nav() {
         </Link>
 
         <nav className="nav-links" aria-label="Primary">
-          <a href="/#checkout">Checkout</a>
-          <a href="/#how">Path</a>
+          <a href="/#checkout">Buy</a>
+          <a href="/#how">How it works</a>
           <a href="/#networks">Networks</a>
+          <a href="/#faq">FAQ</a>
           <NavLink to="/lookup">Lookup</NavLink>
         </nav>
 
         <div className="nav-end">
           <a href="/#checkout" className="nav-cta">
-            Pay now →
+            Buy crypto
           </a>
         </div>
       </div>

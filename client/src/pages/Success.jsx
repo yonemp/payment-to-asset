@@ -53,9 +53,8 @@ export default function Success() {
     <section className="section status-page">
       <div className="wrap status-wrap">
         <div className="section-head">
-          <p className="eyebrow">Delivery</p>
-          <h1>order status</h1>
-          <p>Paid → Quoted → Broadcasting → Confirmed. This page polls until the transfer lands or fails.</p>
+          <h1>Your order</h1>
+          <p>Paid → Quoted → Broadcasting → Confirmed. This page updates until the transfer lands or fails.</p>
         </div>
 
         {!orderId && (
@@ -127,11 +126,11 @@ export default function Success() {
                     <span>{order.asset}</span>
                   </div>
                   <div className="detail-row">
-                    <span>Fiat paid</span>
+                    <span>You paid</span>
                     <span>{formatUsd(order.fiat_amount)}</span>
                   </div>
                   <div className="detail-row">
-                    <span>Quoted size</span>
+                    <span>You get</span>
                     <span className="mono">{formatCrypto(order.crypto_amount, order.asset)}</span>
                   </div>
                   <div className="detail-row">
@@ -147,7 +146,7 @@ export default function Success() {
                 </>
               )}
               <div className="side-links">
-                <Link to="/">New payment</Link>
+                <Link to="/">Buy again</Link>
                 <Link to="/lookup">Look up another</Link>
               </div>
             </aside>
