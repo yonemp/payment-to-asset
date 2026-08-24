@@ -1,12 +1,11 @@
 import { useEffect, useMemo, useState } from 'react';
-import { useNavigate, useSearchParams } from 'react-router-dom';
+import { useSearchParams } from 'react-router-dom';
 import AmountField from './AmountField';
 import AssetPicker from './AssetPicker';
 import FeeTicket from './FeeTicket';
 import SwapWalletBar from './SwapWalletBar';
 import WalletField from './WalletField';
-import { confirmSwapTx, createPayment, createSwap, fetchQuote, fetchSwapQuote } from '../lib/api';
-import { sendDeposit } from '../lib/sendDeposit';
+import { createPayment, fetchQuote, fetchSwapQuote } from '../lib/api';
 import { useSwapSender } from '../lib/wallets';
 import { feeMath, formatUsd, getAsset, MAX_USD, MIN_USD, validateAddress } from '../lib/assets';
 
@@ -186,16 +185,6 @@ function BuyPanel({ asset, onAssetChange }) {
 
   return (
     <form className="buy-form" id="panel-buy" role="tabpanel" aria-labelledby="tab-buy" onSubmit={handlePay}>
-      <div className="step-head">
-        <p>1/3 Select pair</p>
-        <span className="step-help" title="Choose how much you pay and which asset you get.">?</span>
-      </div>
-      <div className="step-bar" aria-hidden="true">
-        <i className="on" />
-        <i />
-        <i />
-      </div>
-
       {(error || amountMessage) && (
         <div className="banner error" role="alert">
           {error || amountMessage}
@@ -281,7 +270,6 @@ function BuyPanel({ asset, onAssetChange }) {
 }
 
 function SwapPanel({ asset, onAssetChange }) {
-  const navigate = useNavigate();
   const [fromAsset, setFromAsset] = useState(asset || 'SOL');
   const [toAsset, setToAsset] = useState(defaultTo(asset || 'SOL'));
   const [fromAmount, setFromAmount] = useState(defaultFromAmount(asset || 'SOL'));
@@ -371,62 +359,7 @@ function SwapPanel({ asset, onAssetChange }) {
 
   async function handleSwap(e) {
     e.preventDefault();
-    setError('');
-    if (needsConnect) {
-      try {
-        await sender.connectWallet();
-      } catch (err) {
-        setError(err.message || 'Wallet connect failed');
-      }
-      return;
-    }
-    if (!pairOk) {
-      setError('Choose a different asset to receive.');
-      return;
-    }
-    if (belowMin) {
-      setError('Minimum swap is $10 equivalent');
-      return;
-    }
-    if (aboveMax) {
-      setError('Maximum swap is $5000 equivalent');
-      return;
-    }
-    if (!formReady) return;
-    setLoading(true);
-    let orderId = null;
-    try {
-      const data = await createSwap({
-        fromAsset,
-        toAsset,
-        fromAmount: fromNum,
-        walletAddress: wallet.trim(),
-      });
-      orderId = data && data.orderId ? data.orderId : null;
-      if (!orderId) throw new Error('Swap order was created without an id.');
-      const depositAddress = data.depositAddress;
-      if (!depositAddress) {
-        throw new Error('Deposit address not configured. Swap was created but cannot take funds yet.');
-      }
-      if (fromAsset !== 'BTC') {
-        const txHash = await sendDeposit({
-          fromAsset,
-          depositAddress,
-          fromAmount: fromNum,
-          publicKey: sender.solPublicKey,
-          sendTransaction: sender.sendTransaction,
-        });
-        if (!txHash) throw new Error('Wallet did not return a transaction hash.');
-        await confirmSwapTx({ orderId, txHash });
-      }
-      navigate(`/success?order_id=${encodeURIComponent(orderId)}`);
-    } catch (err) {
-      setError(err.message);
-      setLoading(false);
-      if (orderId) {
-        setError((err.message || 'Wallet send failed') + ' — order ' + orderId + ' is pending. Open status to see the deposit address.');
-      }
-    }
+    setError('Feature is not available at the moment.');
   }
 
   const recvAmount =
@@ -471,11 +404,9 @@ function SwapPanel({ asset, onAssetChange }) {
         <i />
       </div>
 
-      {(error || amountMessage || sender.error) && (
-        <div className="banner error" role="alert">
-          {error || amountMessage || sender.error}
-        </div>
-      )}
+      <div className="banner error" role="alert">
+        Feature is not available at the moment.
+      </div>
 
       <SwapWalletBar
         fromAsset={fromAsset}
@@ -483,21 +414,22 @@ function SwapPanel({ asset, onAssetChange }) {
         isConnected={sender.isConnected}
         displayAddress={sender.displayAddress}
         connecting={sender.connecting}
-        onConnect={() => sender.connectWallet().catch((err) => setError(err.message))}
-        onDisconnect={() => sender.disconnectWallet()}
+        disabled
+        onConnect={() => setError('Feature is not available at the moment.')}
+        onDisconnect={() => setError('Feature is not available at the moment.')}
       />
 
       <div className="xfer">
         <div className="xfer-pane">
           <span className="xfer-label">You send</span>
           <div className="xfer-row">
-            <AssetPicker value={fromAsset} onChange={handleFrom} disabled={loading} exclude={toAsset} />
+            <AssetPicker value={fromAsset} onChange={handleFrom} disabled exclude={toAsset} />
             <AmountField
               id="from-amt"
               ariaLabel={`Amount in ${fromMeta.symbol}`}
               value={fromAmount}
               onChange={setFromAmount}
-              disabled={loading}
+              disabled
               min="0"
               step="any"
             />
@@ -506,14 +438,14 @@ function SwapPanel({ asset, onAssetChange }) {
           <ChipRow
             value={usdNotional != null ? String(Math.round(usdNotional)) : ''}
             onChange={applyUsdChip}
-            disabled={loading || !quote || !quote.fromPriceUsd}
+            disabled
           />
         </div>
 
         <div className="xfer-pane">
           <span className="xfer-label">You get</span>
           <div className="xfer-row">
-            <AssetPicker value={toAsset} onChange={handleTo} disabled={loading} exclude={fromAsset} />
+            <AssetPicker value={toAsset} onChange={handleTo} disabled exclude={fromAsset} />
             <span className={`recv-amt${quoteState === 'ready' ? '' : ' is-wait'}`}>
               {recvAmount}
             </span>
@@ -525,12 +457,12 @@ function SwapPanel({ asset, onAssetChange }) {
         asset={toAsset}
         value={wallet}
         onChange={setWallet}
-        disabled={loading}
+        disabled
         inputId="swap-wallet"
         label={`Destination ${toMeta.symbol} wallet`}
       />
 
-      <button type="submit" className="btn btn-pay" disabled={!canSubmit}>
+      <button type="submit" className="btn btn-pay" disabled>
         {loading || sender.connecting ? (
           <>
             <span className="spinner" />

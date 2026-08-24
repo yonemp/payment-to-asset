@@ -38,7 +38,7 @@
   --theme-btn-hover: #f6f6f6;
   --mark-outline: rgba(10, 10, 10, 0.07);
   --float: rgba(10, 10, 10, 0.18);
-  --grid: rgba(10, 10, 10, 0.055);
+  --grid: rgba(10, 10, 10, 0.16);
 }
 
 html[data-theme="dark"] {
@@ -72,7 +72,7 @@ html[data-theme="dark"] {
   --theme-btn-hover: #1a1a1a;
   --mark-outline: rgba(255, 255, 255, 0.06);
   --float: rgba(255, 255, 255, 0.18);
-  --grid: rgba(255, 255, 255, 0.05);
+  --grid: rgba(255, 255, 255, 0.14);
 }
 
 * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -298,7 +298,7 @@ html[data-theme="dark"] .nav-links a.active {
   position: absolute;
   inset: 0;
   background-image:
-    radial-gradient(circle, var(--grid) 1.1px, transparent 1.2px);
+    radial-gradient(circle, var(--grid) 1.5px, transparent 1.7px);
   background-size: 22px 22px;
   mask-image: radial-gradient(ellipse 80% 70% at 50% 30%, #000, transparent);
 }

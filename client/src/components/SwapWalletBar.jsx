@@ -4,6 +4,7 @@ export default function SwapWalletBar({
   isConnected,
   displayAddress,
   connecting,
+  disabled,
   onConnect,
   onDisconnect,
 }) {
@@ -25,7 +26,7 @@ export default function SwapWalletBar({
           <strong>Connected</strong>
           <span className="mono">{displayAddress}</span>
         </div>
-        <button type="button" className="btn-wallet-ghost" onClick={onDisconnect} disabled={connecting}>
+        <button type="button" className="btn-wallet-ghost" onClick={onDisconnect} disabled={connecting || disabled}>
           Disconnect
         </button>
       </div>
@@ -42,7 +43,7 @@ export default function SwapWalletBar({
             : 'Phantom or Solflare sends the SOL deposit.'}
         </span>
       </div>
-      <button type="button" className="btn-wallet" onClick={onConnect} disabled={connecting}>
+      <button type="button" className="btn-wallet" onClick={onConnect} disabled={connecting || disabled}>
         {connecting ? 'Connecting…' : 'Connect wallet'}
       </button>
     </div>

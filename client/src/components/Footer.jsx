@@ -10,13 +10,9 @@ export default function Footer() {
             <BrandMark size={28} />
             <span className="brand-word">Card to Crypto</span>
           </Link>
-          <p>
-            Card checkout that delivers SOL, ETH, or BTC to the wallet you
-            enter. Solana is the featured product.
-          </p>
-          <p className="footer-tag mono">CARD · QUOTE · WALLET</p>
-          <p className="footer-url">
-            <a href="https://tackers.xyz">tackers.xyz</a>
+          <p>The only true card to crypto</p>
+          <p className="footer-tag">
+            No KYC · <a href="https://www.tackers.xyz/">tackers.xyz</a>
           </p>
         </div>
         <div>
@@ -53,7 +49,7 @@ export default function Footer() {
           <span aria-hidden="true">·</span>
           <Link to="/terms">Terms</Link>
         </span>
-        <a className="footer-domain" href="https://tackers.xyz">tackers.xyz</a>
+        <a className="footer-domain" href="https://www.tackers.xyz/">tackers.xyz</a>
       </div>
     </footer>
   );
