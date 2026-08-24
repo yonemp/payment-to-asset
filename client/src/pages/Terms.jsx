@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom';
 
 export default function Terms() {
   useEffect(() => {
-    document.title = 'Terms of Use \u2014 Card to Crypto';
+    document.title = 'No KYC Card to Crypto';
   }, []);
 
   return (

@@ -10,7 +10,7 @@ const ROWS = [
 
 export default function Fees() {
   useEffect(() => {
-    document.title = 'Fees — Card to Crypto';
+    document.title = 'No KYC Card to Crypto';
   }, []);
 
   return (

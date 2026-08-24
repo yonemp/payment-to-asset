@@ -12,10 +12,8 @@ export default function Buy() {
   const code = SLUGS[(slug || '').toLowerCase()];
 
   useEffect(() => {
-    if (!code) return;
-    const meta = getAsset(code);
-    document.title = `${meta.buyTitle} — Card to Crypto`;
-  }, [code]);
+    document.title = 'No KYC Card to Crypto';
+  }, []);
 
   if (!code) {
     return <Navigate to="/buy/sol" replace />;

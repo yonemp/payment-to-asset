@@ -25,7 +25,7 @@ export default function Lookup() {
   const navigate = useNavigate();
 
   useEffect(() => {
-    document.title = 'Find an order — Card to Crypto';
+    document.title = 'No KYC Card to Crypto';
   }, []);
   const [id, setId] = useState('');
   const [error, setError] = useState('');

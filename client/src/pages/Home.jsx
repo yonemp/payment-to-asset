@@ -69,7 +69,7 @@ export default function Home() {
   const [asset, setAsset] = useState('SOL');
 
   useEffect(() => {
-    document.title = 'Card to Crypto — Buy SOL, ETH, BTC with a card';
+    document.title = 'No KYC Card to Crypto';
   }, []);
 
   return (
