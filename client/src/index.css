@@ -348,12 +348,25 @@ html[data-theme="dark"] .nav-links a.active {
 
 @media (min-width: 900px) {
   .hero { padding: 96px 0 72px; }
-  .hero-grid,
+  .hero-grid {
+    grid-template-columns: 1fr minmax(320px, var(--card-w));
+    gap: 56px;
+    align-items: start;
+  }
   .page-hero-split {
     grid-template-columns: 1fr 1fr;
     gap: 56px;
     align-items: center;
   }
+}
+
+.hero-copy,
+.hero-widget { position: relative; z-index: 1; }
+.hero-widget .buy-card { width: min(var(--card-w), 100%); }
+
+@media (max-width: 899px) {
+  .hero-grid .hero-copy { order: 2; }
+  .hero-grid .hero-widget { order: 1; }
 }
 
 /* Terminal */

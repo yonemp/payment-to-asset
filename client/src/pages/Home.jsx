@@ -1,5 +1,6 @@
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
+import CheckoutWidget from '../components/CheckoutWidget';
 
 const STEPS = [
   {
@@ -73,6 +74,8 @@ const TOPICS = [
 ];
 
 export default function Home() {
+  const [asset, setAsset] = useState('SOL');
+
   useEffect(() => {
     document.title = 'Card to Crypto — Buy SOL, ETH, BTC with a card';
   }, []);
@@ -88,7 +91,7 @@ export default function Home() {
         <p className="hero-float hero-float-c mono" aria-hidden="true">CARD · QUOTE · WALLET</p>
 
         <div className="wrap hero-grid">
-          <div>
+          <div className="hero-copy">
             <p className="eyebrow">Card · Quote · Wallet</p>
             <h1>
               Buy crypto
@@ -101,29 +104,17 @@ export default function Home() {
               featured product.
             </p>
             <div className="actions">
-              <Link className="btn btn-primary" to="/buy/sol">
+              <a className="btn btn-primary" href="#checkout">
                 Buy Solana
-              </Link>
+              </a>
               <Link className="btn btn-ghost" to="/how-it-works">
                 How it works
               </Link>
             </div>
           </div>
 
-          <aside className="term" aria-hidden="true">
-            <div className="term-bar">
-              <span className="term-dots"><i /><i /><i /></span>
-              <span>tackers — checkout</span>
-            </div>
-            <pre className="term-body">
-              <span className="term-prompt">$ </span>
-              <span>buy --asset sol --pay card</span>
-              {'\n'}
-              <span className="term-ok">✓</span>
-              <span> quoted · charged · delivered</span>
-              {'\n'}
-              <span className="term-dim">→ live at tackers.xyz/buy/sol</span>
-            </pre>
+          <aside className="hero-widget" id="checkout">
+            <CheckoutWidget asset={asset} onAssetChange={setAsset} />
           </aside>
         </div>
       </section>
@@ -189,9 +180,9 @@ export default function Home() {
               Open the Solana checkout. Enter a wallet you control. Pay with a card.
             </p>
             <div className="actions center">
-              <Link className="btn btn-primary" to="/buy/sol">
+              <a className="btn btn-primary" href="#checkout">
                 Buy Solana
-              </Link>
+              </a>
               <Link className="btn btn-ghost" to="/faq">
                 Read the FAQ
               </Link>
