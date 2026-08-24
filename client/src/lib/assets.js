@@ -1,8 +1,8 @@
 export const API = '/api';
 
 export const SERVICE_FEE = 0.02;
-export const MIN_USD = 1;
-export const MAX_USD = 10000;
+export const MIN_USD = 10;
+export const MAX_USD = 5000;
 export const AMOUNT_CHIPS = [25, 50, 100, 250];
 
 export const ADDRESS_PATTERNS = {

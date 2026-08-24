@@ -194,8 +194,11 @@ app.post('/api/create-payment', createLimiter, async (req, res) => {
       return res.status(400).json({ error: addrCheck.error });
     }
     const fiat = Number(usdAmount);
-    if (!Number.isFinite(fiat) || fiat < 1 || fiat > 10000) {
-      return res.status(400).json({ error: 'USD amount must be between 1 and 10000' });
+    if (!Number.isFinite(fiat) || fiat < 10) {
+      return res.status(400).json({ error: 'Minimum purchase is $10' });
+    }
+    if (fiat > 5000) {
+      return res.status(400).json({ error: 'Maximum purchase is $5000' });
     }
     const priceUsd = await getAssetPriceUsd(asset);
     const netUsd = fiat * 0.98;
@@ -274,8 +277,11 @@ app.get('/api/quote', orderLimiter, async (req, res) => {
     if (!asset || !ADDRESS_PATTERNS[asset]) {
       return res.status(400).json({ error: 'Invalid or missing asset. Use ETH, SOL, or BTC' });
     }
-    if (!Number.isFinite(fiat) || fiat < 1 || fiat > 10000) {
-      return res.status(400).json({ error: 'USD amount must be between 1 and 10000' });
+    if (!Number.isFinite(fiat) || fiat < 10) {
+      return res.status(400).json({ error: 'Minimum purchase is $10' });
+    }
+    if (fiat > 5000) {
+      return res.status(400).json({ error: 'Maximum purchase is $5000' });
     }
     const priceUsd = await getAssetPriceUsd(asset);
     const feeUsd = Number((fiat * 0.02).toFixed(2));

@@ -19,7 +19,7 @@ export default function Fees() {
         kicker="// FEES"
         chips={['2%', 'LIVE QUOTE', 'STRIPE']}
         title="2% from the amount you enter"
-        lede="A 2% service fee is taken from the USD you type. The remaining 98% is converted at the live rate when the order is created. Card processing happens on Stripe."
+        lede="A 2% service fee is taken from the USD you type. The remaining 98% is converted at the live rate when the order is created. Card processing happens on Stripe. Minimum purchase is $10. Maximum purchase is $5000."
         aside={
           <div className="ticket">
             <p className="kicker">// EXAMPLE</p>
@@ -64,6 +64,11 @@ export default function Fees() {
               <span className="num">03</span>
               <h3>Quote is live</h3>
               <p>If a quote is unavailable we do not invent a coin amount.</p>
+            </li>
+            <li className="num-card">
+              <span className="num">04</span>
+              <h3>$10 to $5000</h3>
+              <p>Minimum purchase is $10 so small orders do not lose money on fees. Maximum purchase is $5000.</p>
             </li>
           </ol>
         </div>

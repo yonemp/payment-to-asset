@@ -49,7 +49,14 @@ export default function CheckoutWidget({ asset, onAssetChange }) {
   const fees = useMemo(() => feeMath(usd), [usd]);
   const addr = validateAddress(asset, wallet);
   const usdNum = Number(usd);
+  const belowMin = Number.isFinite(usdNum) && usdNum < MIN_USD;
+  const aboveMax = Number.isFinite(usdNum) && usdNum > MAX_USD;
   const amountOk = Number.isFinite(usdNum) && usdNum >= MIN_USD && usdNum <= MAX_USD;
+  const amountMessage = belowMin
+    ? 'Minimum purchase is $10'
+    : aboveMax
+      ? 'Maximum purchase is $5000'
+      : '';
   const canPay = addr.ok && amountOk && !loading;
 
   useEffect(() => {
@@ -86,6 +93,14 @@ export default function CheckoutWidget({ asset, onAssetChange }) {
   async function handlePay(e) {
     e.preventDefault();
     setError('');
+    if (belowMin) {
+      setError('Minimum purchase is $10');
+      return;
+    }
+    if (aboveMax) {
+      setError('Maximum purchase is $5000');
+      return;
+    }
     if (!canPay) return;
     setLoading(true);
     try {
@@ -127,9 +142,9 @@ export default function CheckoutWidget({ asset, onAssetChange }) {
         <i />
       </div>
 
-      {error && (
+      {(error || amountMessage) && (
         <div className="banner error" role="alert">
-          {error}
+          {error || amountMessage}
         </div>
       )}
 
