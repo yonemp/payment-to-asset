@@ -43,8 +43,8 @@ export default function Buy() {
           <a className="btn btn-primary" href="#checkout">
             Continue below
           </a>
-          <Link className="btn btn-ghost" to="/how-it-works">
-            How it works
+          <Link className="btn btn-ghost" to="/fees">
+            See fees
           </Link>
         </div>
         <p className="hero-fine mono">

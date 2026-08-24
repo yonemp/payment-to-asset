@@ -6,7 +6,6 @@ import ThemeToggle from './ThemeToggle';
 const LINKS = [
   { to: '/', label: 'Home', end: true },
   { to: '/buy/sol', label: 'Buy', match: '/buy' },
-  { to: '/how-it-works', label: 'How it works' },
   { to: '/fees', label: 'Fees' },
   { to: '/faq', label: 'FAQ' },
   { to: '/lookup', label: 'Lookup' },

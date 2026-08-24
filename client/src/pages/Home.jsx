@@ -49,14 +49,6 @@ const TOPICS = [
   },
   {
     n: '04',
-    mark: '→',
-    to: '/how-it-works',
-    title: 'How it works',
-    body: 'Four steps from USD to your wallet. No extra app. Stripe first, then the transfer.',
-    tags: 'Pay · Quote · Deliver',
-  },
-  {
-    n: '05',
     mark: '%',
     to: '/fees',
     title: 'Fees',
@@ -64,7 +56,7 @@ const TOPICS = [
     tags: '2% · live quote',
   },
   {
-    n: '06',
+    n: '05',
     mark: '?',
     to: '/faq',
     title: 'FAQ',
@@ -107,8 +99,8 @@ export default function Home() {
               <a className="btn btn-primary" href="#checkout">
                 Buy Solana
               </a>
-              <Link className="btn btn-ghost" to="/how-it-works">
-                How it works
+              <Link className="btn btn-ghost" to="/fees">
+                See fees
               </Link>
             </div>
           </div>

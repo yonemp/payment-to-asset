@@ -2,7 +2,6 @@ import { Navigate, Route, Routes } from 'react-router-dom';
 import Layout from './components/Layout';
 import Home from './pages/Home';
 import Buy from './pages/Buy';
-import HowItWorks from './pages/HowItWorks';
 import Fees from './pages/Fees';
 import Faq from './pages/Faq';
 import Lookup from './pages/Lookup';
@@ -17,7 +16,7 @@ export default function App() {
         <Route path="/" element={<Home />} />
         <Route path="/buy" element={<Navigate to="/buy/sol" replace />} />
         <Route path="/buy/:asset" element={<Buy />} />
-        <Route path="/how-it-works" element={<HowItWorks />} />
+        <Route path="/how-it-works" element={<Navigate to="/" replace />} />
         <Route path="/fees" element={<Fees />} />
         <Route path="/faq" element={<Faq />} />
         <Route path="/success" element={<Success />} />

@@ -5,11 +5,13 @@
       "maxDuration": 30
     }
   },
+  "redirects": [
+    { "source": "/how-it-works", "destination": "/", "permanent": true }
+  ],
   "rewrites": [
     { "source": "/api/:path*", "destination": "/api" },
     { "source": "/buy", "destination": "/index.html" },
     { "source": "/buy/:asset", "destination": "/index.html" },
-    { "source": "/how-it-works", "destination": "/index.html" },
     { "source": "/fees", "destination": "/index.html" },
     { "source": "/faq", "destination": "/index.html" },
     { "source": "/lookup", "destination": "/index.html" },
