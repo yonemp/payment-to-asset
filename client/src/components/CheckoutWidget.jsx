@@ -73,6 +73,7 @@ function ModeTabs({ tab, onChange }) {
         onClick={() => onChange('buy')}
       >
         Buy
+        <span className="no-kyc-pill">No KYC</span>
       </button>
       <button
         type="button"
@@ -262,6 +263,8 @@ function BuyPanel({ asset, onAssetChange }) {
           `Buy ${meta.symbol}`
         )}
       </button>
+
+      <p className="no-kyc-line mono">No KYC</p>
 
       <FeeTicket asset={asset} fees={fees} quote={quote} quoteState={quoteState} />
 
