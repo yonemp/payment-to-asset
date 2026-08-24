@@ -24,7 +24,10 @@ export default function Nav() {
       <div className="wrap nav-row">
         <Link to="/" className="brand" aria-label="Card to Crypto home" onClick={close}>
           <BrandMark />
-          <span className="brand-word">Card to Crypto</span>
+          <span className="brand-lockup">
+            <span className="brand-word">Card to Crypto</span>
+            <span className="brand-tag">The only true · no KYC · tackers.xyz</span>
+          </span>
         </Link>
 
         <nav className="nav-links" aria-label="Primary">
