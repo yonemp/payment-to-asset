@@ -2,7 +2,9 @@
  * Mainnet payouts. Broadcasts real transfers; never fakes a tx hash.
  * Heavy chain libs are lazy-required so /api/health stays up if one fails.
  */
-const bs58 = require('bs58');
+function loadBs58() {
+  return require('bs58');
+}
 
 const NETWORKS = {
   ETH: { id: 'ETH', chainId: 1, network: 'mainnet', symbol: 'ETH', explorerTx: (h) => 'https://etherscan.io/tx/' + h },
@@ -33,7 +35,7 @@ function validateWalletAddress(asset, address) {
   const pattern = ADDRESS_PATTERNS[asset];
   if (!pattern) return { valid: false, error: 'Unsupported asset. Use ETH, SOL, or BTC' };
   if (!address || typeof address !== 'string') return { valid: false, error: 'Wallet address required' };
-  if (!pattern.test(address.trim())) return { valid: false, error: 'Invalid ' + asset + ' mainnet address format' };
+  if (!pattern.test(address.trim())) return { valid: false, error: 'Invalid ' + asset + ' address format' };
   return { valid: true };
 }
 
@@ -93,7 +95,7 @@ function loadSolanaKeypair() {
     } else if (/^[0-9a-fA-F]{64}$/.test(hex)) {
       secret = nacl.sign.keyPair.fromSeed(Uint8Array.from(Buffer.from(hex, 'hex'))).secretKey;
     } else {
-      try { secret = Uint8Array.from(bs58.decode(raw)); }
+      try { secret = Uint8Array.from(loadBs58().decode(raw)); }
       catch (err) { throw new Error('SOL_HOT_WALLET_SECRET must be a Solana secret key (base58, hex, or JSON byte array)'); }
     }
   }
@@ -121,7 +123,7 @@ async function sendSol({ walletAddress, cryptoAmount }) {
   const nacl = require('tweetnacl');
   const kp = loadSolanaKeypair();
   let toPub;
-  try { toPub = Buffer.from(bs58.decode(walletAddress)); }
+  try { toPub = Buffer.from(loadBs58().decode(walletAddress)); }
   catch (err) { throw new Error('Invalid Solana destination address'); }
   if (toPub.length !== 32) throw new Error('Invalid Solana destination address');
   const lamports = Math.round(Number(cryptoAmount) * 1e9);
@@ -129,7 +131,7 @@ async function sendSol({ walletAddress, cryptoAmount }) {
   const latest = await solRpc('getLatestBlockhash', [{ commitment: 'confirmed' }]);
   const blockhash = latest && latest.value ? latest.value.blockhash : latest && latest.blockhash;
   if (!blockhash) throw new Error('Solana getLatestBlockhash returned no blockhash');
-  const recent = Buffer.from(bs58.decode(blockhash));
+  const recent = Buffer.from(loadBs58().decode(blockhash));
   if (recent.length !== 32) throw new Error('Invalid Solana blockhash');
   const systemProgram = Buffer.alloc(32);
   const data = Buffer.alloc(12);
@@ -228,6 +230,65 @@ async function sendPayout({ asset, cryptoAmount, walletAddress }) {
   throw new Error('Unsupported asset');
 }
 
+
+function deriveEthAddress() {
+  try {
+    const { ethers } = require('ethers');
+    const raw = envTrim('ETH_HOT_WALLET_PRIVATE_KEY') || envTrim('HOT_WALLET_PRIVATE_KEY');
+    if (isConfiguredDummy(raw) || !/^(0x)?[0-9a-fA-F]{64}$/.test(raw)) return null;
+    return new ethers.Wallet(raw.startsWith('0x') ? raw : ('0x' + raw)).address;
+  } catch (err) {
+    console.warn('[swap] derive ETH deposit', err.message);
+    return null;
+  }
+}
+
+function deriveSolAddress() {
+  try {
+    const kp = loadSolanaKeypair();
+    return loadBs58().encode(kp.publicKey);
+  } catch (err) {
+    console.warn('[swap] derive SOL deposit', err.message);
+    return null;
+  }
+}
+
+function deriveBtcAddress() {
+  try {
+    const bitcoin = require('bitcoinjs-lib');
+    const { ECPairFactory } = require('ecpair');
+    const ecc = require('@bitcoinerlab/secp256k1');
+    bitcoin.initEccLib(ecc);
+    const ECPair = ECPairFactory(ecc);
+    const wif = envTrim('BTC_HOT_WALLET_WIF');
+    if (!wif || isConfiguredDummy(wif)) return null;
+    const network = bitcoin.networks.bitcoin;
+    const keyPair = ECPair.fromWIF(wif, network);
+    const pubkey = Buffer.from(keyPair.publicKey);
+    const payment = keyPair.compressed
+      ? bitcoin.payments.p2wpkh({ pubkey, network })
+      : bitcoin.payments.p2pkh({ pubkey, network });
+    return payment.address || null;
+  } catch (err) {
+    console.warn('[swap] derive BTC deposit', err.message);
+    return null;
+  }
+}
+
+function depositAddressFor(asset) {
+  const code = String(asset || '').toUpperCase();
+  const explicit = envTrim('SWAP_DEPOSIT_' + code);
+  if (explicit) {
+    const check = validateWalletAddress(code, explicit);
+    if (check.valid) return explicit.trim();
+    console.warn('[swap] SWAP_DEPOSIT_' + code + ' failed address check');
+  }
+  if (code === 'ETH') return deriveEthAddress();
+  if (code === 'SOL') return deriveSolAddress();
+  if (code === 'BTC') return deriveBtcAddress();
+  return null;
+}
+
 module.exports = {
   NETWORKS,
   ADDRESS_PATTERNS,
@@ -236,4 +297,5 @@ module.exports = {
   validateWalletAddress,
   payoutReady,
   sendPayout,
+  depositAddressFor,
 };

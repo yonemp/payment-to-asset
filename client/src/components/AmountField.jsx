@@ -1,6 +1,16 @@
 import { AMOUNT_CHIPS, MAX_USD, MIN_USD } from '../lib/assets';
 
-export default function AmountField({ value, onChange, disabled, showChips = false }) {
+export default function AmountField({
+  value,
+  onChange,
+  disabled,
+  showChips = false,
+  id = 'usd',
+  ariaLabel = 'Amount in USD',
+  min = MIN_USD,
+  max = MAX_USD,
+  step = '0.01',
+}) {
   const n = Number(value);
   const chipMatch = AMOUNT_CHIPS.includes(n);
 
@@ -8,17 +18,17 @@ export default function AmountField({ value, onChange, disabled, showChips = fal
     <div className="amount-block">
       <div className="amount-input">
         <input
-          id="usd"
+          id={id}
           type="number"
-          min={MIN_USD}
-          max={MAX_USD}
-          step="0.01"
+          min={min}
+          max={max}
+          step={step}
           inputMode="decimal"
           value={value}
           onChange={(e) => onChange(e.target.value)}
           required
           disabled={disabled}
-          aria-label="Amount in USD"
+          aria-label={ariaLabel}
         />
       </div>
       {showChips && (

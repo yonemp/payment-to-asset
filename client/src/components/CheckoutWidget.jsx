@@ -1,14 +1,13 @@
 import { useEffect, useMemo, useState } from 'react';
-import { useSearchParams } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import AmountField from './AmountField';
-import AssetGlyph from './AssetGlyph';
 import AssetPicker from './AssetPicker';
 import FeeTicket from './FeeTicket';
 import WalletField from './WalletField';
-import { createPayment, fetchQuote } from '../lib/api';
+import { createPayment, createSwap, fetchQuote, fetchSwapQuote } from '../lib/api';
 import { feeMath, formatUsd, getAsset, MAX_USD, MIN_USD, validateAddress } from '../lib/assets';
 
-function ChipRow({ value, onChange, disabled }) {
+function ChipRow({ value, onChange, disabled, prefix = '$' }) {
   const n = Number(value);
   const chips = [25, 50, 100, 250];
   return (
@@ -21,7 +20,7 @@ function ChipRow({ value, onChange, disabled }) {
           onClick={() => onChange(String(amt))}
           disabled={disabled}
         >
-          ${amt}
+          {prefix}{amt}
         </button>
       ))}
     </div>
@@ -36,7 +35,58 @@ function formatGet(amount) {
   return `~ ${n.toFixed(6)}`;
 }
 
-export default function CheckoutWidget({ asset, onAssetChange }) {
+function defaultTo(from) {
+  if (from === 'SOL') return 'ETH';
+  if (from === 'ETH') return 'SOL';
+  return 'SOL';
+}
+
+function defaultFromAmount(asset) {
+  if (asset === 'ETH') return '0.05';
+  if (asset === 'BTC') return '0.002';
+  return '1';
+}
+
+function cryptoFromUsd(usd, price) {
+  const p = Number(price);
+  if (!Number.isFinite(p) || p <= 0) return '';
+  const n = Number(usd) / p;
+  if (!Number.isFinite(n) || n <= 0) return '';
+  if (n >= 1) return n.toFixed(4).replace(/\.?0+$/, '');
+  if (n >= 0.01) return n.toFixed(6).replace(/\.?0+$/, '');
+  return n.toFixed(8).replace(/\.?0+$/, '');
+}
+
+function ModeTabs({ tab, onChange }) {
+  return (
+    <div className="mode-tabs" role="tablist" aria-label="Buy or Swap">
+      <button
+        type="button"
+        role="tab"
+        id="tab-buy"
+        aria-selected={tab === 'buy'}
+        aria-controls="panel-buy"
+        className={`mode-tab${tab === 'buy' ? ' is-on' : ''}`}
+        onClick={() => onChange('buy')}
+      >
+        Buy
+      </button>
+      <button
+        type="button"
+        role="tab"
+        id="tab-swap"
+        aria-selected={tab === 'swap'}
+        aria-controls="panel-swap"
+        className={`mode-tab${tab === 'swap' ? ' is-on' : ''}`}
+        onClick={() => onChange('swap')}
+      >
+        Swap
+      </button>
+    </div>
+  );
+}
+
+function BuyPanel({ asset, onAssetChange }) {
   const [searchParams] = useSearchParams();
   const [wallet, setWallet] = useState('');
   const [usd, setUsd] = useState('100');
@@ -131,7 +181,7 @@ export default function CheckoutWidget({ asset, onAssetChange }) {
   }
 
   return (
-    <form className="buy-card" onSubmit={handlePay}>
+    <form className="buy-form" id="panel-buy" role="tabpanel" aria-labelledby="tab-buy" onSubmit={handlePay}>
       <div className="step-head">
         <p>1/3 Select pair</p>
         <span className="step-help" title="Choose how much you pay and which asset you get.">?</span>
@@ -221,5 +271,258 @@ export default function CheckoutWidget({ asset, onAssetChange }) {
             : ''}
       </p>
     </form>
+  );
+}
+
+function SwapPanel({ asset, onAssetChange }) {
+  const navigate = useNavigate();
+  const [fromAsset, setFromAsset] = useState(asset || 'SOL');
+  const [toAsset, setToAsset] = useState(defaultTo(asset || 'SOL'));
+  const [fromAmount, setFromAmount] = useState(defaultFromAmount(asset || 'SOL'));
+  const [wallet, setWallet] = useState('');
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
+  const [quote, setQuote] = useState(null);
+  const [quoteState, setQuoteState] = useState('idle');
+
+  useEffect(() => {
+    if (asset && asset !== fromAsset) {
+      setFromAsset(asset);
+      setToAsset((prev) => (prev === asset ? defaultTo(asset) : prev));
+      setFromAmount(defaultFromAmount(asset));
+    }
+  }, [asset]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  const fromMeta = getAsset(fromAsset);
+  const toMeta = getAsset(toAsset);
+  const addr = validateAddress(toAsset, wallet);
+  const fromNum = Number(fromAmount);
+  const amountPositive = Number.isFinite(fromNum) && fromNum > 0;
+  const usdNotional = quote && Number.isFinite(Number(quote.usdNotional)) ? Number(quote.usdNotional) : null;
+  const belowMin = usdNotional != null && usdNotional < MIN_USD;
+  const aboveMax = usdNotional != null && usdNotional > MAX_USD;
+  const amountOk = amountPositive && usdNotional != null && usdNotional >= MIN_USD && usdNotional <= MAX_USD;
+  const pairOk = fromAsset !== toAsset;
+  const amountMessage = !pairOk
+    ? 'Choose a different asset to receive.'
+    : belowMin
+      ? 'Minimum swap is $10 equivalent'
+      : aboveMax
+        ? 'Maximum swap is $5000 equivalent'
+        : '';
+  const canSwap = addr.ok && amountOk && pairOk && quoteState === 'ready' && !loading;
+
+  useEffect(() => {
+    if (!pairOk || !amountPositive) {
+      setQuote(null);
+      setQuoteState('idle');
+      return undefined;
+    }
+    const controller = new AbortController();
+    const timer = setTimeout(async () => {
+      setQuoteState('loading');
+      try {
+        const data = await fetchSwapQuote({
+          fromAsset,
+          toAsset,
+          fromAmount: fromNum,
+          signal: controller.signal,
+        });
+        setQuote(data);
+        setQuoteState('ready');
+      } catch (err) {
+        if (err.name === 'AbortError') return;
+        setQuote(null);
+        setQuoteState('unavailable');
+      }
+    }, 280);
+    return () => {
+      clearTimeout(timer);
+      controller.abort();
+    };
+  }, [fromAsset, toAsset, fromNum, amountPositive, pairOk]);
+
+  function handleFrom(next) {
+    if (next === toAsset) setToAsset(defaultTo(next));
+    setFromAsset(next);
+    setFromAmount(defaultFromAmount(next));
+    if (onAssetChange) onAssetChange(next);
+  }
+
+  function handleTo(next) {
+    if (next === fromAsset) return;
+    setToAsset(next);
+  }
+
+  function applyUsdChip(usd) {
+    const price = quote && quote.fromPriceUsd;
+    const next = cryptoFromUsd(usd, price);
+    if (next) setFromAmount(next);
+  }
+
+  async function handleSwap(e) {
+    e.preventDefault();
+    setError('');
+    if (!pairOk) {
+      setError('Choose a different asset to receive.');
+      return;
+    }
+    if (belowMin) {
+      setError('Minimum swap is $10 equivalent');
+      return;
+    }
+    if (aboveMax) {
+      setError('Maximum swap is $5000 equivalent');
+      return;
+    }
+    if (!canSwap) return;
+    setLoading(true);
+    try {
+      const data = await createSwap({
+        fromAsset,
+        toAsset,
+        fromAmount: fromNum,
+        walletAddress: wallet.trim(),
+      });
+      const dest = data && data.orderId ? data.orderId : null;
+      if (!dest) {
+        throw new Error('Swap order was created without an id.');
+      }
+      navigate(`/success?order_id=${encodeURIComponent(dest)}`);
+    } catch (err) {
+      setError(err.message);
+      setLoading(false);
+    }
+  }
+
+  const recvAmount =
+    quoteState === 'ready' && quote
+      ? formatGet(quote.toAmount)
+      : quoteState === 'loading'
+        ? 'Quoting…'
+        : quoteState === 'unavailable'
+          ? '—'
+          : '—';
+
+  const fees = useMemo(() => {
+    if (quote && Number.isFinite(Number(quote.usdNotional))) {
+      return feeMath(quote.usdNotional);
+    }
+    return feeMath(0);
+  }, [quote]);
+
+  const usdLabel = quoteState === 'ready' && quote
+    ? `≈ ${formatUsd(quote.usdNotional)} · $10–$5000`
+    : quoteState === 'loading'
+      ? 'Converting to USD…'
+      : amountPositive
+        ? 'Live USD equivalent needed for limits'
+        : 'Enter an amount';
+
+  return (
+    <form className="buy-form" id="panel-swap" role="tabpanel" aria-labelledby="tab-swap" onSubmit={handleSwap}>
+      <div className="step-head">
+        <p>1/3 Swap pair</p>
+        <span className="step-help" title="Send one asset, receive another. Same 2% fee on the USD value.">?</span>
+      </div>
+      <div className="step-bar" aria-hidden="true">
+        <i className="on" />
+        <i />
+        <i />
+      </div>
+
+      {(error || amountMessage) && (
+        <div className="banner error" role="alert">
+          {error || amountMessage}
+        </div>
+      )}
+
+      <div className="xfer">
+        <div className="xfer-pane">
+          <span className="xfer-label">You send</span>
+          <div className="xfer-row">
+            <AssetPicker value={fromAsset} onChange={handleFrom} disabled={loading} exclude={toAsset} />
+            <AmountField
+              id="from-amt"
+              ariaLabel={`Amount in ${fromMeta.symbol}`}
+              value={fromAmount}
+              onChange={setFromAmount}
+              disabled={loading}
+              min="0"
+              step="any"
+            />
+          </div>
+          <p className="xfer-sub">{usdLabel}</p>
+          <ChipRow
+            value={usdNotional != null ? String(Math.round(usdNotional)) : ''}
+            onChange={applyUsdChip}
+            disabled={loading || !quote || !quote.fromPriceUsd}
+          />
+        </div>
+
+        <div className="xfer-pane">
+          <span className="xfer-label">You get</span>
+          <div className="xfer-row">
+            <AssetPicker value={toAsset} onChange={handleTo} disabled={loading} exclude={fromAsset} />
+            <span className={`recv-amt${quoteState === 'ready' ? '' : ' is-wait'}`}>
+              {recvAmount}
+            </span>
+          </div>
+        </div>
+      </div>
+
+      <WalletField
+        asset={toAsset}
+        value={wallet}
+        onChange={setWallet}
+        disabled={loading}
+        inputId="swap-wallet"
+        label={`Destination ${toMeta.symbol} wallet`}
+      />
+
+      <button type="submit" className="btn btn-pay" disabled={!canSwap}>
+        {loading ? (
+          <>
+            <span className="spinner" />
+            Creating swap…
+          </>
+        ) : (
+          `Swap ${fromMeta.symbol} → ${toMeta.symbol}`
+        )}
+      </button>
+
+      <FeeTicket
+        asset={toAsset}
+        fromAsset={fromAsset}
+        fees={fees}
+        quote={quote}
+        quoteState={quoteState}
+        mode="swap"
+      />
+
+      <p className="widget-foot mono">
+        $ swap --from {fromMeta.symbol.toLowerCase()} --to {toMeta.symbol.toLowerCase()}
+        {quoteState === 'ready' && quote?.usdNotional != null
+          ? `  ·  ${formatUsd(quote.usdNotional)}`
+          : quoteState === 'loading'
+            ? '  ·  live…'
+            : ''}
+      </p>
+    </form>
+  );
+}
+
+export default function CheckoutWidget({ asset, onAssetChange }) {
+  const [tab, setTab] = useState('buy');
+
+  return (
+    <div className="buy-card">
+      <ModeTabs tab={tab} onChange={setTab} />
+      {tab === 'buy' ? (
+        <BuyPanel asset={asset} onAssetChange={onAssetChange} />
+      ) : (
+        <SwapPanel asset={asset} onAssetChange={onAssetChange} />
+      )}
+    </div>
   );
 }

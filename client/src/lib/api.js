@@ -1,20 +1,30 @@
 import { API } from './assets';
 
 function messageFromApi(res, data, fallback) {
+  const detail = data && typeof data.detail === 'string' && data.detail.trim() ? data.detail.trim() : '';
+  if (data && data.code === 'STORE_DOWN') {
+    return (data.error && data.error.trim()) || 'Order store is unavailable (STORE_DOWN)';
+  }
   if (data && typeof data.error === 'string' && data.error.trim()) {
-    if (res.status === 503 && /stripe/i.test(data.error)) {
-      return data.error;
+    if (res.status >= 500 || res.status === 503) {
+      return detail ? data.error + ' — ' + detail : data.error;
     }
     return data.error;
   }
   if (res.status === 503) {
-    return 'Checkout is unavailable (503). Stripe live mode is not configured — add a rotated STRIPE_SECRET_KEY (sk_live_...) in Vercel Production.';
+    if (/stripe/i.test(fallback)) {
+      return 'Checkout is unavailable (503). Stripe live mode is not configured — add a rotated STRIPE_SECRET_KEY (sk_live_...) in Vercel Production.';
+    }
+    return fallback + ' (503). The order store is down or unreachable.';
   }
   if (res.status === 400) {
     return fallback + ' (bad request). Check the wallet address and amount.';
   }
   if (res.status >= 500) {
     return fallback + ' (server ' + res.status + '). The API crashed or is misconfigured — this is not a wallet-validation error.';
+  }
+  if (res.status === 404) {
+    return fallback;
   }
   return fallback + ' (HTTP ' + res.status + ')';
 }
@@ -40,10 +50,28 @@ export async function createPayment({ asset, walletAddress, usdAmount }) {
   return data;
 }
 
-export async function fetchOrder(id) {
-  const res = await fetch(`${API}/order/${encodeURIComponent(id)}`);
+export async function createSwap({ fromAsset, toAsset, fromAmount, walletAddress }) {
+  const res = await fetch(`${API}/create-swap`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ fromAsset, toAsset, fromAmount, walletAddress }),
+  });
   const data = await readJson(res);
-  if (!res.ok) throw new Error(messageFromApi(res, data, 'Order not found'));
+  if (!res.ok) throw new Error(messageFromApi(res, data, 'Failed to create swap'));
+  return data;
+}
+
+export async function fetchOrder(id) {
+  const trimmed = String(id || '').trim();
+  const res = await fetch(`${API}/order/${encodeURIComponent(trimmed)}`);
+  const data = await readJson(res);
+  if (!res.ok) {
+    const err = new Error(messageFromApi(res, data, 'Order not found'));
+    err.status = res.status;
+    err.code = data && data.code ? data.code : null;
+    err.detail = data && data.detail ? data.detail : null;
+    throw err;
+  }
   return data;
 }
 
@@ -55,6 +83,18 @@ export async function fetchQuote(asset, usdAmount, signal) {
   const res = await fetch(`${API}/quote?${params}`, { signal });
   const data = await readJson(res);
   if (!res.ok) throw new Error(messageFromApi(res, data, 'Quote unavailable'));
+  return data;
+}
+
+export async function fetchSwapQuote({ fromAsset, toAsset, fromAmount, signal }) {
+  const params = new URLSearchParams({
+    fromAsset,
+    toAsset,
+    fromAmount: String(fromAmount),
+  });
+  const res = await fetch(`${API}/quote-swap?${params}`, { signal });
+  const data = await readJson(res);
+  if (!res.ok) throw new Error(messageFromApi(res, data, 'Swap quote unavailable'));
   return data;
 }
 

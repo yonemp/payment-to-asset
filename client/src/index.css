@@ -1011,3 +1011,92 @@ input[type="text"]:focus {
   html { scroll-behavior: auto; }
   .btn, .topic-card, .spinner { transition: none; animation: none; }
 }
+
+.order-id-box {
+  margin: 8px 0 14px;
+  padding: 12px;
+  border-radius: 10px;
+  background: var(--surface);
+  border: 1px solid var(--line);
+}
+.order-id-box span {
+  display: block;
+  color: var(--dim);
+  font-size: 0.68rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  margin-bottom: 6px;
+}
+.order-id-box p {
+  word-break: break-all;
+  font-size: 0.8rem;
+  margin: 0 0 10px;
+  line-height: 1.45;
+}
+.btn-copy {
+  height: 32px;
+  padding: 0 12px;
+  border-radius: 8px;
+  border: 1px solid var(--line);
+  background: var(--card);
+  color: var(--ink);
+  font-size: 0.75rem;
+  font-weight: 700;
+}
+.btn-copy:hover { background: var(--surface); }
+
+/* Buy | Swap tabs */
+.mode-tabs {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 4px;
+  padding: 4px;
+  margin: -4px -4px 16px;
+  background: var(--field);
+  border: 1px solid var(--line);
+  border-radius: 12px;
+}
+.mode-tab {
+  height: 40px;
+  border-radius: 9px;
+  font-weight: 700;
+  font-size: 0.92rem;
+  color: var(--muted);
+}
+.mode-tab:hover { color: var(--ink); }
+.mode-tab.is-on {
+  background: var(--card);
+  color: var(--ink);
+  box-shadow: var(--shadow-sm);
+  border: 1px solid var(--line);
+}
+.mode-tab[aria-selected="true"] { color: var(--ink); }
+.xfer-sub {
+  margin-top: 8px;
+  font-size: 0.75rem;
+  color: var(--dim);
+  text-align: right;
+}
+.deposit-box {
+  margin: 8px 0 14px;
+  padding: 14px;
+  border-radius: 10px;
+  background: var(--surface);
+  border: 1px solid var(--line);
+}
+.deposit-box span {
+  display: block;
+  color: var(--dim);
+  font-size: 0.68rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  margin-bottom: 8px;
+  font-weight: 700;
+}
+.deposit-box p.mono {
+  word-break: break-all;
+  font-size: 0.86rem;
+  margin: 0 0 8px;
+  line-height: 1.45;
+}
+.deposit-help { color: var(--muted); font-size: 0.82rem; margin: 0; }

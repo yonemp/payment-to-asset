@@ -2,10 +2,11 @@ import { useEffect, useRef, useState } from 'react';
 import { ASSETS, getAsset } from '../lib/assets';
 import AssetGlyph from './AssetGlyph';
 
-export default function AssetPicker({ value, onChange, disabled }) {
+export default function AssetPicker({ value, onChange, disabled, exclude }) {
   const [open, setOpen] = useState(false);
   const wrapRef = useRef(null);
   const current = getAsset(value);
+  const options = ASSETS.filter((asset) => asset.value !== exclude);
 
   useEffect(() => {
     function onDoc(e) {
@@ -42,7 +43,7 @@ export default function AssetPicker({ value, onChange, disabled }) {
       </button>
       {open && (
         <div className="asset-menu-list" role="listbox" aria-label="Choose asset">
-          {ASSETS.map((asset) => (
+          {options.map((asset) => (
             <button
               key={asset.value}
               type="button"
