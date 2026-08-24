@@ -560,7 +560,9 @@ function SwapPanel({ asset, onAssetChange }) {
 }
 
 export default function CheckoutWidget({ asset, onAssetChange }) {
-  const [tab, setTab] = useState('buy');
+  const [searchParams] = useSearchParams();
+  const initialTab = searchParams.get('tab') === 'swap' ? 'swap' : 'buy';
+  const [tab, setTab] = useState(initialTab);
 
   return (
     <div className="buy-card">
