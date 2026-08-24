@@ -25,7 +25,7 @@ export function timelineState(order) {
     if (status === 'completed') {
       return { deposit: 'done', quoted: 'done', settling: 'done', delivered: 'done' };
     }
-    if (status === 'processing') {
+    if (status === 'processing' || order.deposit_tx) {
       return { deposit: 'done', quoted: 'done', settling: 'active', delivered: 'wait' };
     }
     return { deposit: 'active', quoted: 'done', settling: 'wait', delivered: 'wait' };

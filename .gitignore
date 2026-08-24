@@ -17,3 +17,8 @@ Thumbs.db
 .env*
 !.env.example
 !server/.env.example
+
+# Isolated swap keys — never commit
+data/
+**/data/wallets/
+server/data/

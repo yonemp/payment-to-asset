@@ -98,6 +98,17 @@ export async function fetchSwapQuote({ fromAsset, toAsset, fromAmount, signal })
   return data;
 }
 
+export async function confirmSwapTx({ orderId, txHash }) {
+  const res = await fetch(`${API}/confirm-swap-tx`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ orderId, txHash }),
+  });
+  const data = await readJson(res);
+  if (!res.ok) throw new Error(messageFromApi(res, data, 'Failed to save deposit transaction'));
+  return data;
+}
+
 export async function fetchHealth() {
   const res = await fetch(`${API}/health`);
   const data = await readJson(res);

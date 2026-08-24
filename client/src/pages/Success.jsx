@@ -133,21 +133,49 @@ export default function Success() {
                   </div>
                   <Timeline order={order} />
 
-                  {isSwap && order.status === 'pending' && order.deposit_address && (
+                  {isSwap && (order.deposit_address || order.deposit_tx) && (
                     <div className="deposit-box">
-                      <CopyableId
-                        value={order.deposit_address}
-                        label={`Send ${formatCrypto(order.from_amount, order.from_asset)} to this address`}
-                      />
-                      <p className="deposit-help">
-                        Send exactly that amount to this address. The swap stays pending until the deposit is seen. It is not complete yet.
-                      </p>
+                      {order.deposit_address && (
+                        <CopyableId
+                          value={order.deposit_address}
+                          label={order.deposit_tx
+                            ? `Deposit address (${order.from_asset})`
+                            : `Send ${formatCrypto(order.from_amount, order.from_asset)} to this address`}
+                        />
+                      )}
+                      {order.from_asset === 'BTC' && order.deposit_address && !order.deposit_tx && (
+                        <div className="deposit-qr">
+                          <img
+                            alt="Bitcoin deposit QR"
+                            src={`https://api.qrserver.com/v1/create-qr-code/?size=160x160&data=${encodeURIComponent(order.deposit_address)}`}
+                          />
+                          <p className="deposit-help">
+                            Scan to send Bitcoin to the deposit address. The swap stays pending until that payment is seen.
+                          </p>
+                        </div>
+                      )}
+                      {order.deposit_tx && (
+                        <div className="tx-box">
+                          <span>Connected send tx</span>
+                          <p className="mono">{order.deposit_tx}</p>
+                        </div>
+                      )}
+                      {order.payout_note && (
+                        <div className="banner error" role="status">
+                          {order.payout_note}
+                        </div>
+                      )}
+                      {!order.deposit_tx && order.status === 'pending' && order.deposit_address && (
+                        <p className="deposit-help">
+                          Send exactly that amount to this address. The swap stays pending until the deposit is seen. It is not complete yet.
+                        </p>
+                      )}
                     </div>
                   )}
 
                   {isSwap && order.status === 'pending' && !order.deposit_address && (
                     <div className="banner error">
-                      Deposit address not configured. This swap order is pending and was not completed. Set SWAP_DEPOSIT_{order.from_asset} (or the matching hot-wallet key) and try again.
+                      Deposit address not configured. This swap order is pending and was not completed.
                     </div>
                   )}
 
@@ -228,10 +256,28 @@ export default function Success() {
                       </div>
                     </>
                   )}
-                  {order.tx_hash && (
+                  {(order.payout_tx || order.tx_hash) && (
                     <div className="tx-box">
-                      <span>Transaction</span>
-                      <p className="mono">{order.tx_hash}</p>
+                      <span>{isSwap ? 'Payout tx' : 'Transaction'}</span>
+                      <p className="mono">{order.payout_tx || order.tx_hash}</p>
+                    </div>
+                  )}
+                  {isSwap && order.deposit_tx && (
+                    <div className="tx-box">
+                      <span>Connected send tx</span>
+                      <p className="mono">{order.deposit_tx}</p>
+                    </div>
+                  )}
+                  {isSwap && order.deposit_address && (
+                    <div className="detail-row">
+                      <span>Deposit address</span>
+                      <span className="mono">{shorten(order.deposit_address, 10, 8)}</span>
+                    </div>
+                  )}
+                  {order.payout_note && (
+                    <div className="detail-row">
+                      <span>Note</span>
+                      <span>{order.payout_note}</span>
                     </div>
                   )}
                 </>

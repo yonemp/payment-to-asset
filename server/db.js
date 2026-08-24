@@ -187,6 +187,9 @@ function schemaSql(driver) {
       '  to_asset TEXT,',
       '  from_amount REAL,',
       '  deposit_address TEXT,',
+      '  deposit_tx TEXT,',
+      '  payout_tx TEXT,',
+      '  payout_note TEXT,',
       '  created_at TEXT NOT NULL DEFAULT (datetime(\'now\')),',
       '  updated_at TEXT NOT NULL DEFAULT (datetime(\'now\'))',
       ');',
@@ -227,6 +230,9 @@ function migrateSql(driver) {
       'ALTER TABLE orders ADD COLUMN to_asset TEXT',
       'ALTER TABLE orders ADD COLUMN from_amount REAL',
       'ALTER TABLE orders ADD COLUMN deposit_address TEXT',
+      'ALTER TABLE orders ADD COLUMN deposit_tx TEXT',
+      'ALTER TABLE orders ADD COLUMN payout_tx TEXT',
+      'ALTER TABLE orders ADD COLUMN payout_note TEXT',
     ];
   }
   return [
@@ -237,6 +243,9 @@ function migrateSql(driver) {
     'ALTER TABLE orders ADD COLUMN IF NOT EXISTS to_asset TEXT',
     'ALTER TABLE orders ADD COLUMN IF NOT EXISTS from_amount DOUBLE PRECISION',
     'ALTER TABLE orders ADD COLUMN IF NOT EXISTS deposit_address TEXT',
+    'ALTER TABLE orders ADD COLUMN IF NOT EXISTS deposit_tx TEXT',
+    'ALTER TABLE orders ADD COLUMN IF NOT EXISTS payout_tx TEXT',
+    'ALTER TABLE orders ADD COLUMN IF NOT EXISTS payout_note TEXT',
   ];
 }
 

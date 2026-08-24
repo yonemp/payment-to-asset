@@ -5,6 +5,8 @@
 function loadBs58() {
   return require('bs58');
 }
+const fs = require('fs');
+const path = require('path');
 
 const NETWORKS = {
   ETH: { id: 'ETH', chainId: 1, network: 'mainnet', symbol: 'ETH', explorerTx: (h) => 'https://etherscan.io/tx/' + h },
@@ -40,21 +42,21 @@ function validateWalletAddress(asset, address) {
 }
 
 function payoutReady() {
-  const ethKey = envTrim('ETH_HOT_WALLET_PRIVATE_KEY') || envTrim('HOT_WALLET_PRIVATE_KEY');
-  const solKey = envTrim('SOL_HOT_WALLET_SECRET') || envTrim('HOT_WALLET_PRIVATE_KEY');
-  const btcKey = envTrim('BTC_HOT_WALLET_WIF');
+  const eth = ethKey();
+  const sol = solKey();
+  const btc = btcKey();
   return {
-    ETH: !isConfiguredDummy(ethKey) && /^(0x)?[0-9a-fA-F]{64}$/.test(ethKey),
-    SOL: !isConfiguredDummy(solKey),
-    BTC: Boolean(btcKey) && !isConfiguredDummy(btcKey),
+    ETH: !isConfiguredDummy(eth) && /^(0x)?[0-9a-fA-F]{64}$/.test(eth),
+    SOL: !isConfiguredDummy(sol),
+    BTC: Boolean(btc) && !isConfiguredDummy(btc),
   };
 }
 
 async function sendEth({ walletAddress, cryptoAmount }) {
   const { ethers } = require('ethers');
-  const raw = envTrim('ETH_HOT_WALLET_PRIVATE_KEY') || envTrim('HOT_WALLET_PRIVATE_KEY');
+  const raw = ethKey();
   if (isConfiguredDummy(raw) || !/^(0x)?[0-9a-fA-F]{64}$/.test(raw)) {
-    throw new Error('HOT_WALLET_PRIVATE_KEY (32-byte hex) is required for Ethereum mainnet payouts');
+    throw new Error('ETH payout key is required');
   }
   const rpc = envTrim('ETH_RPC_URL') || 'https://cloudflare-eth.com';
   const provider = new ethers.JsonRpcProvider(rpc, 1);
@@ -83,8 +85,8 @@ function compactU16(n) {
 
 function loadSolanaKeypair() {
   const nacl = require('tweetnacl');
-  const raw = envTrim('SOL_HOT_WALLET_SECRET') || envTrim('HOT_WALLET_PRIVATE_KEY');
-  if (isConfiguredDummy(raw)) throw new Error('SOL_HOT_WALLET_SECRET is required for Solana mainnet payouts');
+  const raw = solKey();
+  if (isConfiguredDummy(raw)) throw new Error('SOL payout key is required');
   let secret;
   if (raw.startsWith('[')) {
     secret = Uint8Array.from(JSON.parse(raw));
@@ -160,8 +162,8 @@ async function sendBtc({ walletAddress, cryptoAmount }) {
   const ecc = require('@bitcoinerlab/secp256k1');
   bitcoin.initEccLib(ecc);
   const ECPair = ECPairFactory(ecc);
-  const wif = envTrim('BTC_HOT_WALLET_WIF');
-  if (!wif) throw new Error('BTC_HOT_WALLET_WIF (mainnet WIF) is required for Bitcoin mainnet payouts');
+  const wif = btcKey();
+  if (!wif) throw new Error('BTC payout key is required');
   const network = bitcoin.networks.bitcoin;
   let keyPair;
   try { keyPair = ECPair.fromWIF(wif, network); }
@@ -234,7 +236,7 @@ async function sendPayout({ asset, cryptoAmount, walletAddress }) {
 function deriveEthAddress() {
   try {
     const { ethers } = require('ethers');
-    const raw = envTrim('ETH_HOT_WALLET_PRIVATE_KEY') || envTrim('HOT_WALLET_PRIVATE_KEY');
+    const raw = ethKey();
     if (isConfiguredDummy(raw) || !/^(0x)?[0-9a-fA-F]{64}$/.test(raw)) return null;
     return new ethers.Wallet(raw.startsWith('0x') ? raw : ('0x' + raw)).address;
   } catch (err) {
@@ -260,7 +262,7 @@ function deriveBtcAddress() {
     const ecc = require('@bitcoinerlab/secp256k1');
     bitcoin.initEccLib(ecc);
     const ECPair = ECPairFactory(ecc);
-    const wif = envTrim('BTC_HOT_WALLET_WIF');
+    const wif = btcKey();
     if (!wif || isConfiguredDummy(wif)) return null;
     const network = bitcoin.networks.bitcoin;
     const keyPair = ECPair.fromWIF(wif, network);
@@ -277,7 +279,7 @@ function deriveBtcAddress() {
 
 function depositAddressFor(asset) {
   const code = String(asset || '').toUpperCase();
-  const explicit = envTrim('SWAP_DEPOSIT_' + code);
+  const explicit = envTrim('SWAP_DEPOSIT_' + code) || publicFromFile('deposit-' + code.toLowerCase() + '.json');
   if (explicit) {
     const check = validateWalletAddress(code, explicit);
     if (check.valid) return explicit.trim();
@@ -289,6 +291,273 @@ function depositAddressFor(asset) {
   return null;
 }
 
+function dataDir() {
+  return envTrim('SWAP_DATA_DIR') || '/home/vboxuser/apps/payment-to-asset/data/wallets';
+}
+
+function readWalletFile(name) {
+  try {
+    const p = path.join(dataDir(), name);
+    if (!fs.existsSync(p)) return null;
+    const raw = fs.readFileSync(p, 'utf8');
+    const j = JSON.parse(raw);
+    return j && typeof j === 'object' ? j : null;
+  } catch {
+    return null;
+  }
+}
+
+function secretFromFile(name) {
+  const file = readWalletFile(name);
+  if (!file) return '';
+  return String(file.secret || file.privateKey || file.wif || '').trim();
+}
+
+function publicFromFile(name) {
+  const file = readWalletFile(name);
+  if (!file) return '';
+  return String(file.public || file.address || '').trim();
+}
+
+function ethKey() {
+  return envTrim('ETH_HOT_WALLET_PRIVATE_KEY') || envTrim('HOT_WALLET_PRIVATE_KEY') || secretFromFile('payout-eth.json') || secretFromFile('deposit-eth.json');
+}
+
+function solKey() {
+  return envTrim('SOL_HOT_WALLET_SECRET') || envTrim('HOT_WALLET_PRIVATE_KEY') || secretFromFile('payout-sol.json') || secretFromFile('deposit-sol.json');
+}
+
+function btcKey() {
+  return envTrim('BTC_HOT_WALLET_WIF') || secretFromFile('payout-btc.json') || secretFromFile('deposit-btc.json');
+}
+
+function amountClose(actual, expected, slack) {
+  const a = Number(actual);
+  const e = Number(expected);
+  if (!Number.isFinite(a) || !Number.isFinite(e) || e <= 0) return false;
+  return a + 1e-12 >= e * (1 - (slack || 0.02));
+}
+
+async function verifyEthDeposit({ txHash, depositAddress, expectedAmount }) {
+  const { ethers } = require('ethers');
+  const rpc = envTrim('ETH_RPC_URL') || 'https://cloudflare-eth.com';
+  const provider = new ethers.JsonRpcProvider(rpc, 1);
+  const tx = await provider.getTransaction(txHash);
+  if (!tx) return { confirmed: false, reason: 'transaction not found' };
+  if (String(tx.to || '').toLowerCase() !== String(depositAddress).toLowerCase()) {
+    return { confirmed: false, reason: 'destination mismatch' };
+  }
+  const value = Number(ethers.formatEther(tx.value || 0n));
+  if (!amountClose(value, expectedAmount)) {
+    return { confirmed: false, reason: 'amount too low', amount: value };
+  }
+  const receipt = await provider.getTransactionReceipt(txHash);
+  const confirmed = Boolean(receipt && receipt.blockNumber && Number(receipt.status) === 1);
+  return { confirmed, ok: true, amount: value, txHash };
+}
+
+async function verifySolDeposit({ txHash, depositAddress, expectedAmount }) {
+  const tx = await solRpc('getTransaction', [
+    txHash,
+    { encoding: 'jsonParsed', commitment: 'confirmed', maxSupportedTransactionVersion: 0 },
+  ]);
+  if (!tx) return { confirmed: false, reason: 'transaction not found' };
+  const meta = tx.meta || {};
+  if (meta.err) return { confirmed: false, reason: 'transaction failed on-chain' };
+  const keys = [];
+  const message = tx.transaction && tx.transaction.message;
+  const accountKeys = (message && message.accountKeys) || [];
+  accountKeys.forEach((k) => {
+    if (typeof k === 'string') keys.push(k);
+    else if (k && k.pubkey) keys.push(k.pubkey);
+  });
+  const destIdx = keys.findIndex((k) => k === depositAddress);
+  let received = 0;
+  if (destIdx >= 0 && Array.isArray(meta.preBalances) && Array.isArray(meta.postBalances)) {
+    received = (Number(meta.postBalances[destIdx]) - Number(meta.preBalances[destIdx])) / 1e9;
+  }
+  if (received <= 0 && Array.isArray(message && message.instructions)) {
+    message.instructions.forEach((ix) => {
+      const parsed = ix && ix.parsed;
+      if (parsed && parsed.type === 'transfer' && parsed.info && parsed.info.destination === depositAddress) {
+        received += Number(parsed.info.lamports || 0) / 1e9;
+      }
+    });
+  }
+  if (!amountClose(received, expectedAmount)) {
+    return { confirmed: false, reason: 'amount too low', amount: received, txHash };
+  }
+  return { confirmed: true, ok: true, amount: received, txHash };
+}
+
+async function verifyBtcDeposit({ txHash, depositAddress, expectedAmount }) {
+  const api = (envTrim('BTC_API_URL') || 'https://mempool.space/api').replace(/\/$/, '');
+  const tx = await fetchJson(api + '/tx/' + txHash);
+  if (!tx || !Array.isArray(tx.vout)) return { confirmed: false, reason: 'transaction not found' };
+  let received = 0;
+  tx.vout.forEach((v) => {
+    const addr = v.scriptpubkey_address || (v.scriptpubkey_addresses && v.scriptpubkey_addresses[0]);
+    if (addr === depositAddress) received += Number(v.value || 0) / 1e8;
+  });
+  if (!amountClose(received, expectedAmount)) {
+    return { confirmed: false, reason: 'amount too low', amount: received, txHash };
+  }
+  const confirmed = Number(tx.status && tx.status.confirmed ? 1 : 0) === 1 || Number(tx.status && tx.status.block_height) > 0;
+  return { confirmed, ok: true, amount: received, txHash };
+}
+
+async function verifyDepositTx({ asset, txHash, depositAddress, expectedAmount }) {
+  const code = String(asset || '').toUpperCase();
+  const hash = String(txHash || '').trim();
+  if (!hash) return { confirmed: false, reason: 'missing tx hash' };
+  if (code === 'ETH') {
+    if (!/^0x[0-9a-fA-F]{64}$/.test(hash)) return { confirmed: false, reason: 'invalid ETH tx hash' };
+    return verifyEthDeposit({ txHash: hash, depositAddress, expectedAmount });
+  }
+  if (code === 'SOL') {
+    if (hash.length < 32) return { confirmed: false, reason: 'invalid SOL signature' };
+    return verifySolDeposit({ txHash: hash, depositAddress, expectedAmount });
+  }
+  if (code === 'BTC') {
+    if (!/^[0-9a-fA-F]{64}$/.test(hash)) return { confirmed: false, reason: 'invalid BTC tx hash' };
+    return verifyBtcDeposit({ txHash: hash, depositAddress, expectedAmount });
+  }
+  return { confirmed: false, reason: 'unsupported asset' };
+}
+
+async function findEthDeposit({ depositAddress, expectedAmount, sinceMs }) {
+  try {
+    const url = 'https://eth.blockscout.com/api/v2/addresses/' + depositAddress + '/transactions?filter=to';
+    const data = await fetchJson(url);
+    const items = (data && data.items) || [];
+    for (const item of items) {
+      const hash = item.hash || item.tx_hash;
+      const to = item.to && (item.to.hash || item.to);
+      const ts = Date.parse(item.timestamp || item.block_timestamp || '') || 0;
+      if (sinceMs && ts && ts < sinceMs - 120000) continue;
+      if (String(to || '').toLowerCase() !== String(depositAddress).toLowerCase()) continue;
+      const value = Number(item.value || 0) / 1e18;
+      if (amountClose(value, expectedAmount)) {
+        const confirmed = item.status === 'ok' || item.result === 'success' || Boolean(item.block_number);
+        return { confirmed, ok: true, amount: value, txHash: hash };
+      }
+    }
+  } catch (err) {
+    return { confirmed: false, reason: 'eth scan failed: ' + err.message };
+  }
+  return { confirmed: false, reason: 'no matching ETH deposit yet' };
+}
+
+async function findSolDeposit({ depositAddress, expectedAmount }) {
+  try {
+    const sigs = await solRpc('getSignaturesForAddress', [depositAddress, { limit: 12 }]);
+    if (!Array.isArray(sigs)) return { confirmed: false, reason: 'no SOL signatures' };
+    for (const row of sigs) {
+      if (!row || !row.signature || row.err) continue;
+      const check = await verifySolDeposit({
+        txHash: row.signature,
+        depositAddress,
+        expectedAmount,
+      });
+      if (check.confirmed) return check;
+    }
+  } catch (err) {
+    return { confirmed: false, reason: 'sol scan failed: ' + err.message };
+  }
+  return { confirmed: false, reason: 'no matching SOL deposit yet' };
+}
+
+async function findBtcDeposit({ depositAddress, expectedAmount, sinceMs }) {
+  try {
+    const api = (envTrim('BTC_API_URL') || 'https://mempool.space/api').replace(/\/$/, '');
+    const txs = await fetchJson(api + '/address/' + depositAddress + '/txs');
+    if (!Array.isArray(txs)) return { confirmed: false, reason: 'no BTC txs' };
+    for (const tx of txs) {
+      let received = 0;
+      (tx.vout || []).forEach((v) => {
+        const addr = v.scriptpubkey_address;
+        if (addr === depositAddress) received += Number(v.value || 0) / 1e8;
+      });
+      if (!amountClose(received, expectedAmount)) continue;
+      const ts = tx.status && tx.status.block_time ? tx.status.block_time * 1000 : 0;
+      if (sinceMs && ts && ts < sinceMs - 30 * 60000) continue;
+      return {
+        confirmed: Boolean(tx.status && tx.status.confirmed),
+        ok: true,
+        amount: received,
+        txHash: tx.txid,
+      };
+    }
+  } catch (err) {
+    return { confirmed: false, reason: 'btc scan failed: ' + err.message };
+  }
+  return { confirmed: false, reason: 'no matching BTC deposit yet' };
+}
+
+async function findDepositTx({ asset, depositAddress, expectedAmount, sinceMs }) {
+  const code = String(asset || '').toUpperCase();
+  if (!depositAddress) return { confirmed: false, reason: 'missing deposit address' };
+  if (code === 'ETH') return findEthDeposit({ depositAddress, expectedAmount, sinceMs });
+  if (code === 'SOL') return findSolDeposit({ depositAddress, expectedAmount });
+  if (code === 'BTC') return findBtcDeposit({ depositAddress, expectedAmount, sinceMs });
+  return { confirmed: false, reason: 'unsupported asset' };
+}
+
+async function payoutFundingState(asset, cryptoAmount) {
+  const code = String(asset || '').toUpperCase();
+  const readyMap = payoutReady();
+  if (!readyMap[code]) {
+    return { ready: false, reason: 'payout wallet not configured' };
+  }
+  const need = Number(cryptoAmount);
+  try {
+    if (code === 'ETH') {
+      const { ethers } = require('ethers');
+      const raw = ethKey();
+      const rpc = envTrim('ETH_RPC_URL') || 'https://cloudflare-eth.com';
+      const provider = new ethers.JsonRpcProvider(rpc, 1);
+      const wallet = new ethers.Wallet(raw.startsWith('0x') ? raw : ('0x' + raw), provider);
+      const bal = await provider.getBalance(wallet.address);
+      const value = ethers.parseEther(String(need));
+      if (bal <= value) return { ready: false, reason: 'insufficient ETH', address: wallet.address };
+      return { ready: true, address: wallet.address };
+    }
+    if (code === 'SOL') {
+      const kp = loadSolanaKeypair();
+      const pub = loadBs58().encode(kp.publicKey);
+      const info = await solRpc('getBalance', [pub]);
+      const lamports = info && typeof info.value === 'number' ? info.value : Number(info) || 0;
+      const needLamports = Math.round(need * 1e9) + 5000;
+      if (lamports < needLamports) return { ready: false, reason: 'insufficient SOL', address: pub };
+      return { ready: true, address: pub };
+    }
+    if (code === 'BTC') {
+      const bitcoin = require('bitcoinjs-lib');
+      const { ECPairFactory } = require('ecpair');
+      const ecc = require('@bitcoinerlab/secp256k1');
+      bitcoin.initEccLib(ecc);
+      const ECPair = ECPairFactory(ecc);
+      const wif = btcKey();
+      const keyPair = ECPair.fromWIF(wif, bitcoin.networks.bitcoin);
+      const pubkey = Buffer.from(keyPair.publicKey);
+      const payment = keyPair.compressed
+        ? bitcoin.payments.p2wpkh({ pubkey, network: bitcoin.networks.bitcoin })
+        : bitcoin.payments.p2pkh({ pubkey, network: bitcoin.networks.bitcoin });
+      const fromAddress = payment.address;
+      const api = (envTrim('BTC_API_URL') || 'https://mempool.space/api').replace(/\/$/, '');
+      const utxos = await fetchJson(api + '/address/' + fromAddress + '/utxo');
+      const total = Array.isArray(utxos) ? utxos.reduce((s, u) => s + Number(u.value || 0), 0) : 0;
+      const needSats = Math.round(need * 1e8) + 1000;
+      if (total < needSats) return { ready: false, reason: 'insufficient BTC', address: fromAddress };
+      return { ready: true, address: fromAddress };
+    }
+  } catch (err) {
+    return { ready: false, reason: err.message };
+  }
+  return { ready: false, reason: 'unsupported asset' };
+}
+
+
 module.exports = {
   NETWORKS,
   ADDRESS_PATTERNS,
@@ -298,4 +567,7 @@ module.exports = {
   payoutReady,
   sendPayout,
   depositAddressFor,
+  verifyDepositTx,
+  findDepositTx,
+  payoutFundingState,
 };

@@ -3,8 +3,11 @@ import { useNavigate, useSearchParams } from 'react-router-dom';
 import AmountField from './AmountField';
 import AssetPicker from './AssetPicker';
 import FeeTicket from './FeeTicket';
+import SwapWalletBar from './SwapWalletBar';
 import WalletField from './WalletField';
-import { createPayment, createSwap, fetchQuote, fetchSwapQuote } from '../lib/api';
+import { confirmSwapTx, createPayment, createSwap, fetchQuote, fetchSwapQuote } from '../lib/api';
+import { sendDeposit } from '../lib/sendDeposit';
+import { useSwapSender } from '../lib/wallets';
 import { feeMath, formatUsd, getAsset, MAX_USD, MIN_USD, validateAddress } from '../lib/assets';
 
 function ChipRow({ value, onChange, disabled, prefix = '$' }) {
@@ -284,6 +287,7 @@ function SwapPanel({ asset, onAssetChange }) {
   const [error, setError] = useState('');
   const [quote, setQuote] = useState(null);
   const [quoteState, setQuoteState] = useState('idle');
+  const sender = useSwapSender(fromAsset);
 
   useEffect(() => {
     if (asset && asset !== fromAsset) {
@@ -310,7 +314,9 @@ function SwapPanel({ asset, onAssetChange }) {
       : aboveMax
         ? 'Maximum swap is $5000 equivalent'
         : '';
-  const canSwap = addr.ok && amountOk && pairOk && quoteState === 'ready' && !loading;
+  const formReady = addr.ok && amountOk && pairOk && quoteState === 'ready' && !loading;
+  const needsConnect = sender.needsWallet && !sender.isConnected;
+  const canSubmit = needsConnect ? !loading && !sender.connecting : formReady;
 
   useEffect(() => {
     if (!pairOk || !amountPositive) {
@@ -363,6 +369,14 @@ function SwapPanel({ asset, onAssetChange }) {
   async function handleSwap(e) {
     e.preventDefault();
     setError('');
+    if (needsConnect) {
+      try {
+        await sender.connectWallet();
+      } catch (err) {
+        setError(err.message || 'Wallet connect failed');
+      }
+      return;
+    }
     if (!pairOk) {
       setError('Choose a different asset to receive.');
       return;
@@ -375,8 +389,9 @@ function SwapPanel({ asset, onAssetChange }) {
       setError('Maximum swap is $5000 equivalent');
       return;
     }
-    if (!canSwap) return;
+    if (!formReady) return;
     setLoading(true);
+    let orderId = null;
     try {
       const data = await createSwap({
         fromAsset,
@@ -384,14 +399,30 @@ function SwapPanel({ asset, onAssetChange }) {
         fromAmount: fromNum,
         walletAddress: wallet.trim(),
       });
-      const dest = data && data.orderId ? data.orderId : null;
-      if (!dest) {
-        throw new Error('Swap order was created without an id.');
+      orderId = data && data.orderId ? data.orderId : null;
+      if (!orderId) throw new Error('Swap order was created without an id.');
+      const depositAddress = data.depositAddress;
+      if (!depositAddress) {
+        throw new Error('Deposit address not configured. Swap was created but cannot take funds yet.');
       }
-      navigate(`/success?order_id=${encodeURIComponent(dest)}`);
+      if (fromAsset !== 'BTC') {
+        const txHash = await sendDeposit({
+          fromAsset,
+          depositAddress,
+          fromAmount: fromNum,
+          publicKey: sender.solPublicKey,
+          sendTransaction: sender.sendTransaction,
+        });
+        if (!txHash) throw new Error('Wallet did not return a transaction hash.');
+        await confirmSwapTx({ orderId, txHash });
+      }
+      navigate(`/success?order_id=${encodeURIComponent(orderId)}`);
     } catch (err) {
       setError(err.message);
       setLoading(false);
+      if (orderId) {
+        setError((err.message || 'Wallet send failed') + ' — order ' + orderId + ' is pending. Open status to see the deposit address.');
+      }
     }
   }
 
@@ -419,11 +450,17 @@ function SwapPanel({ asset, onAssetChange }) {
         ? 'Live USD equivalent needed for limits'
         : 'Enter an amount';
 
+  const cta = needsConnect
+    ? (sender.connecting ? 'Connecting…' : 'Connect wallet')
+    : loading
+      ? (fromAsset === 'BTC' ? 'Creating swap…' : 'Confirm in wallet…')
+      : `Swap ${fromMeta.symbol} → ${toMeta.symbol}`;
+
   return (
     <form className="buy-form" id="panel-swap" role="tabpanel" aria-labelledby="tab-swap" onSubmit={handleSwap}>
       <div className="step-head">
         <p>1/3 Swap pair</p>
-        <span className="step-help" title="Send one asset, receive another. Same 2% fee on the USD value.">?</span>
+        <span className="step-help" title="Connect a wallet, send one asset, receive another. Same 2% fee on the USD value.">?</span>
       </div>
       <div className="step-bar" aria-hidden="true">
         <i className="on" />
@@ -431,11 +468,21 @@ function SwapPanel({ asset, onAssetChange }) {
         <i />
       </div>
 
-      {(error || amountMessage) && (
+      {(error || amountMessage || sender.error) && (
         <div className="banner error" role="alert">
-          {error || amountMessage}
+          {error || amountMessage || sender.error}
         </div>
       )}
+
+      <SwapWalletBar
+        fromAsset={fromAsset}
+        needsWallet={sender.needsWallet}
+        isConnected={sender.isConnected}
+        displayAddress={sender.displayAddress}
+        connecting={sender.connecting}
+        onConnect={() => sender.connectWallet().catch((err) => setError(err.message))}
+        onDisconnect={() => sender.disconnectWallet()}
+      />
 
       <div className="xfer">
         <div className="xfer-pane">
@@ -480,14 +527,14 @@ function SwapPanel({ asset, onAssetChange }) {
         label={`Destination ${toMeta.symbol} wallet`}
       />
 
-      <button type="submit" className="btn btn-pay" disabled={!canSwap}>
-        {loading ? (
+      <button type="submit" className="btn btn-pay" disabled={!canSubmit}>
+        {loading || sender.connecting ? (
           <>
             <span className="spinner" />
-            Creating swap…
+            {cta}
           </>
         ) : (
-          `Swap ${fromMeta.symbol} → ${toMeta.symbol}`
+          cta
         )}
       </button>
 

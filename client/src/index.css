@@ -1100,3 +1100,48 @@ input[type="text"]:focus {
   line-height: 1.45;
 }
 .deposit-help { color: var(--muted); font-size: 0.82rem; margin: 0; }
+
+/* Swap wallet connect */
+.wallet-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin: 12px 0 4px;
+  padding: 12px 14px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: var(--surface);
+}
+.wallet-bar.is-on { border-color: var(--line-strong); }
+.wallet-bar-copy { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.wallet-bar-copy strong { font-size: 0.82rem; }
+.wallet-bar-copy span { font-size: 0.75rem; color: var(--muted); }
+.wallet-bar-copy .mono { color: var(--ink); letter-spacing: 0.01em; }
+.btn-wallet, .btn-wallet-ghost {
+  flex-shrink: 0;
+  height: 34px;
+  padding: 0 12px;
+  border-radius: 8px;
+  font-size: 0.78rem;
+  font-weight: 700;
+}
+.btn-wallet { background: var(--cta); color: var(--cta-ink); }
+.btn-wallet:hover { background: var(--cta-hover); }
+.btn-wallet-ghost { border: 1px solid var(--line); background: var(--card); color: var(--ink); }
+.btn-wallet-ghost:hover { background: var(--field); }
+.deposit-qr {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  margin-top: 10px;
+}
+.deposit-qr img {
+  width: 148px;
+  height: 148px;
+  border-radius: 8px;
+  background: #fff;
+  padding: 6px;
+  border: 1px solid var(--line);
+}
+.tx-box + .tx-box { margin-top: 10px; }

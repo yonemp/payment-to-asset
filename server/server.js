@@ -70,6 +70,8 @@ const {
   depositAddressFor,
 } = payouts;
 
+const swapSettle = require('./swap-settle');
+
 const PORT = process.env.PORT || 3001;
 const HOST = process.env.HOST || '127.0.0.1';
 const CLIENT_URL = process.env.CLIENT_URL || (process.env.VERCEL_PROJECT_PRODUCTION_URL ? ('https://' + process.env.VERCEL_PROJECT_PRODUCTION_URL) : (process.env.VERCEL_URL ? ('https://' + process.env.VERCEL_URL) : 'http://localhost:5173'));
@@ -173,7 +175,11 @@ function publicOrder(order) {
     deposit_configured: Boolean(deposit),
     status: order.status,
     tx_hash: order.tx_hash,
-    explorer_url: order.tx_hash && meta ? meta.explorerTx(order.tx_hash) : null,
+    explorer_url: (order.payout_tx || order.tx_hash) && meta ? meta.explorerTx(order.payout_tx || order.tx_hash) : null,
+    deposit_tx: order.deposit_tx || null,
+    payout_tx: order.payout_tx || (kind === 'swap' ? order.tx_hash : null),
+    payout_note: order.payout_note || null,
+    deposit_explorer_url: order.deposit_tx && fromAsset && NETWORKS[fromAsset] ? NETWORKS[fromAsset].explorerTx(order.deposit_tx) : null,
     created_at: order.created_at,
     updated_at: order.updated_at,
   };
@@ -187,8 +193,8 @@ async function insertOrder(row) {
   const kind = row.kind || 'buy';
   try {
     await db.query(
-      `INSERT INTO orders (id, asset, fiat_amount, crypto_amount, wallet_address, status, stripe_session_id, kind, from_asset, to_asset, from_amount, deposit_address)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)`,
+      `INSERT INTO orders (id, asset, fiat_amount, crypto_amount, wallet_address, status, stripe_session_id, kind, from_asset, to_asset, from_amount, deposit_address, deposit_tx, payout_tx, payout_note)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15)`,
       [
         row.id,
         row.asset,
@@ -202,6 +208,9 @@ async function insertOrder(row) {
         row.to_asset || null,
         row.from_amount == null ? null : row.from_amount,
         row.deposit_address || null,
+        row.deposit_tx || null,
+        row.payout_tx || null,
+        row.payout_note || null,
       ]
     );
     return;
@@ -698,6 +707,42 @@ app.post('/api/create-swap', createLimiter, async (req, res) => {
   }
 });
 
+app.post('/api/confirm-swap-tx', createLimiter, async (req, res) => {
+  try {
+    const orderId = String((req.body && req.body.orderId) || '').trim();
+    const txHash = String((req.body && req.body.txHash) || '').trim();
+    if (!orderId || !txHash) {
+      return res.status(400).json({ error: 'orderId and txHash are required' });
+    }
+    if (!db || db.driver === 'down') {
+      return res.status(503).json(storeDownPayload({ message: db && db.reason ? db.reason : 'store unavailable' }));
+    }
+    const order = await findOrder(orderId);
+    if (!order) return res.status(404).json({ error: 'Order not found', code: 'ORDER_NOT_FOUND' });
+    try {
+      await swapSettle.attachDepositTx(db, order, txHash);
+    } catch (err) {
+      if (err && err.status) return res.status(err.status).json({ error: err.message });
+      throw err;
+    }
+    const fresh = await getOrderById(order.id);
+    const allowPayout = String(process.env.SWAP_PAYOUT_ON_API || '') === '1';
+    try {
+      await swapSettle.settleSwap(db, fresh, { allowPayout });
+    } catch (err) {
+      console.warn('[confirm-swap-tx] settle', err.message);
+    }
+    const out = await getOrderById(order.id);
+    res.json(publicOrder(out));
+  } catch (err) {
+    console.error('[confirm-swap-tx]', err);
+    const storeish = err && (err.code === 'STORE_DOWN' || /store /i.test(String(err.message || '')));
+    res.status(storeish ? 503 : 500).json(
+      storeish ? storeDownPayload(err) : { error: 'Failed to confirm swap transaction', detail: err.message }
+    );
+  }
+});
+
 app.get('/api/order/:id', orderLimiter, async (req, res) => {
   try {
     if (!db || db.driver === 'down') {
@@ -710,6 +755,16 @@ app.get('/api/order/:id', orderLimiter, async (req, res) => {
     const order = await findOrder(id);
     if (!order) {
       return res.status(404).json({ error: 'Order not found', code: 'ORDER_NOT_FOUND' });
+    }
+    if (swapSettle.isSwap(order) && order.status !== 'completed' && order.status !== 'failed') {
+      try {
+        const allowPayout = String(process.env.SWAP_PAYOUT_ON_API || '') === '1';
+        await swapSettle.settleSwap(db, order, { allowPayout });
+      } catch (err) {
+        console.warn('[order] settle', err.message);
+      }
+      const fresh = await getOrderById(order.id);
+      return res.json(publicOrder(fresh || order));
     }
     res.json(publicOrder(order));
   } catch (err) {
