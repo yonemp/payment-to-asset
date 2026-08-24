@@ -15,6 +15,9 @@ export default function Footer() {
             enter. Solana is the featured product.
           </p>
           <p className="footer-tag mono">CARD · QUOTE · WALLET</p>
+          <p className="footer-url">
+            <a href="https://tackers.xyz">tackers.xyz</a>
+          </p>
         </div>
         <div>
           <h2 className="footer-head">Pages</h2>
@@ -41,7 +44,7 @@ export default function Footer() {
             <li><Link to="/terms">Terms</Link></li>
           </ul>
         </div>
-        <p className="footer-mark" aria-hidden="true">CARD TO CRYPTO</p>
+        <p className="footer-mark" aria-hidden="true">tackers.xyz</p>
       </div>
       <div className="wrap footer-bar">
         <span>© {new Date().getFullYear()} Card to Crypto. All rights reserved.</span>
@@ -50,7 +53,7 @@ export default function Footer() {
           <span aria-hidden="true">·</span>
           <Link to="/terms">Terms</Link>
         </span>
-        <span className="mono muted">tackers.xyz</span>
+        <a className="footer-domain" href="https://tackers.xyz">tackers.xyz</a>
       </div>
     </footer>
   );

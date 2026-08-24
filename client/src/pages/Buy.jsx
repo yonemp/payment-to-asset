@@ -27,7 +27,7 @@ export default function Buy() {
     <>
       <PageHero
         kicker="// BUY"
-        chips={[meta.symbol, 'CARD', 'NO KYC', '2% FEE', meta.network.toUpperCase()]}
+        chips={['CARD', 'NO KYC', '2% FEE', 'TRUST']}
         title={`Buy ${meta.name} with a card`}
         lede={`Pay in USD on Stripe. Receive ${meta.symbol} at the wallet address you enter. A 2% service fee is taken from the amount you type; the rest converts at the live rate.`}
         aside={

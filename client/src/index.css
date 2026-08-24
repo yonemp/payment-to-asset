@@ -842,6 +842,24 @@ input[type="text"]:focus {
 }
 .footer-brand p { color: var(--muted); font-size: 0.9rem; margin-top: 12px; max-width: 32ch; }
 .footer-tag { margin-top: 16px; color: var(--dim); letter-spacing: 0.12em; font-size: 0.7rem; }
+.footer-brand .footer-url {
+  margin-top: 18px;
+  font-family: var(--display);
+  font-weight: 700;
+  font-size: 1.35rem;
+  letter-spacing: -0.03em;
+  color: var(--ink);
+  max-width: none;
+}
+.site-footer .footer-url a { color: var(--ink); font-size: inherit; }
+.site-footer .footer-url a:hover { color: var(--ink); }
+.site-footer a.footer-domain {
+  font-family: var(--mono);
+  color: var(--ink);
+  font-size: 0.86rem;
+  letter-spacing: 0.04em;
+}
+.site-footer a.footer-domain:hover { color: var(--ink); }
 .site-footer ul { list-style: none; }
 .site-footer li + li { margin-top: 8px; }
 .site-footer a { color: var(--muted); font-size: 0.9rem; }
