@@ -12,7 +12,7 @@ export default function Footer() {
           </Link>
           <p>The only true card to crypto</p>
           <p className="footer-tag">
-            No KYC · <a href="https://www.tackers.xyz/">tackers.xyz</a>
+            No KYC · <a href="https://www.cardtosol.com/">cardtosol.com</a> · <a href="https://www.cardtobtc.com/">cardtobtc.com</a>
           </p>
         </div>
         <div>
@@ -40,7 +40,7 @@ export default function Footer() {
             <li><Link to="/terms">Terms</Link></li>
           </ul>
         </div>
-        <p className="footer-mark" aria-hidden="true">tackers.xyz</p>
+        <p className="footer-mark" aria-hidden="true">cardtosol · cardtobtc</p>
       </div>
       <div className="wrap footer-bar">
         <span>© {new Date().getFullYear()} Card to Crypto. All rights reserved.</span>
@@ -49,7 +49,7 @@ export default function Footer() {
           <span aria-hidden="true">·</span>
           <Link to="/terms">Terms</Link>
         </span>
-        <a className="footer-domain" href="https://www.tackers.xyz/">tackers.xyz</a>
+        <span className="footer-domains"><a className="footer-domain" href="https://www.cardtosol.com/">cardtosol.com</a><span aria-hidden="true"> · </span><a className="footer-domain" href="https://www.cardtobtc.com/">cardtobtc.com</a></span>
       </div>
     </footer>
   );

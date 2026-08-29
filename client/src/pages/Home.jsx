@@ -84,7 +84,7 @@ export default function Home() {
 
         <div className="wrap hero-grid">
           <div className="hero-copy">
-            <p className="eyebrow">The only true · no KYC · tackers.xyz</p>
+            <p className="eyebrow">The only true · no KYC · cardtosol.com · cardtobtc.com</p>
             <h1>
               Buy crypto
               <br />

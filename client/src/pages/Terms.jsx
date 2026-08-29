@@ -11,13 +11,13 @@ export default function Terms() {
       <div className="wrap legal-wrap">
         <div className="section-head">
           <h1>Terms of Use</h1>
-          <p>Last updated August 23, 2026. Card to Crypto at tackers.xyz.</p>
+          <p>Last updated August 29, 2026. Card to Crypto at cardtosol.com and cardtobtc.com.</p>
         </div>
 
         <div className="legal-body">
           <p>
             These terms cover your use of Card to Crypto at{' '}
-            <a href="https://www.tackers.xyz">www.tackers.xyz</a>.
+            <a href="https://www.cardtosol.com/">www.cardtosol.com</a> or <a href="https://www.cardtobtc.com/">www.cardtobtc.com</a>.
           </p>
 
           <h2>The service</h2>
@@ -75,7 +75,7 @@ export default function Terms() {
           <h2>Liability</h2>
           <p>
             The service is provided as is. To the fullest extent allowed by
-            applicable law, Card to Crypto and the operators of tackers.xyz are
+            applicable law, Card to Crypto and the operators of cardtosol.com and cardtobtc.com are
             not liable for lost funds from a wrong address, network delays or
             congestion, price movement between quote and send, Stripe declines
             or holds, or downtime.
@@ -102,7 +102,7 @@ export default function Terms() {
           <h2>Contact</h2>
           <p>
             Questions about these terms: use the site at{' '}
-            <a href="https://www.tackers.xyz">www.tackers.xyz</a>.
+            <a href="https://www.cardtosol.com/">www.cardtosol.com</a> or <a href="https://www.cardtobtc.com/">www.cardtobtc.com</a>.
           </p>
 
           <p className="legal-nav">

@@ -11,7 +11,7 @@ export default function Privacy() {
       <div className="wrap legal-wrap">
         <div className="section-head">
           <h1>Privacy Policy</h1>
-          <p>Last updated August 23, 2026. Card to Crypto at tackers.xyz.</p>
+          <p>Last updated August 29, 2026. Card to Crypto at cardtosol.com and cardtobtc.com.</p>
         </div>
 
         <div className="legal-body">
@@ -106,7 +106,7 @@ export default function Privacy() {
           <p>
             If you want an order record removed, or you have a privacy question,
             contact us through the site at{' '}
-            <a href="https://www.tackers.xyz">www.tackers.xyz</a>. Include the
+            <a href="https://www.cardtosol.com/">www.cardtosol.com</a> or <a href="https://www.cardtobtc.com/">www.cardtobtc.com</a>. Include the
             order ID if you have one. We may need that ID to find the record.
           </p>
 
