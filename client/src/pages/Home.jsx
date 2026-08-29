@@ -11,7 +11,7 @@ const STEPS = [
   {
     n: '02',
     title: 'Quote',
-    body: 'A 2% fee comes out of the amount you type. The remaining 98% is sized at the live rate.',
+    body: 'A 14% fee comes out of the amount you type. The remaining 86% is sized at the live rate.',
   },
   {
     n: '03',
@@ -27,7 +27,7 @@ const TOPICS = [
     to: '/buy/sol',
     title: 'Buy Solana',
     body: 'The featured product. Pay in USD with a card. SOL lands in the wallet you name.',
-    tags: 'SOL · Stripe · 2% fee',
+    tags: 'SOL · Stripe · 14% fee',
     wide: true,
     dark: true,
   },
@@ -52,8 +52,8 @@ const TOPICS = [
     mark: '%',
     to: '/fees',
     title: 'Fees',
-    body: 'A 2% service fee is taken from the USD you enter. The rest converts at the live rate.',
-    tags: '2% · live quote',
+    body: 'A 14% service fee is taken from the USD you enter. The rest converts at the live rate.',
+    tags: '14% · live quote',
   },
   {
     n: '05',
@@ -116,7 +116,7 @@ export default function Home() {
           <p className="kicker">// THE ON-RAMP</p>
           <h2>A card checkout that delivers crypto</h2>
           <p className="lede">
-            You pay in USD. We quote at the live rate, take a 2% service fee,
+            You pay in USD. We quote at the live rate, take a 14% service fee,
             and send the asset to your wallet after Stripe confirms.
           </p>
         </div>

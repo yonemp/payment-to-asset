@@ -396,7 +396,7 @@ function SwapPanel({ asset, onAssetChange }) {
     <form className="buy-form" id="panel-swap" role="tabpanel" aria-labelledby="tab-swap" onSubmit={handleSwap}>
       <div className="step-head">
         <p>1/3 Swap pair</p>
-        <span className="step-help" title="Connect a wallet, send one asset, receive another. Same 2% fee on the USD value.">?</span>
+        <span className="step-help" title="Connect a wallet, send one asset, receive another. Same 14% fee on the USD value.">?</span>
       </div>
       <div className="step-bar" aria-hidden="true">
         <i className="on" />

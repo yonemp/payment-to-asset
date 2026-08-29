@@ -4,8 +4,8 @@ import PageHero from '../components/PageHero';
 
 const ROWS = [
   { label: 'You enter', value: '$100.00' },
-  { label: 'Service fee · 2%', value: '$2.00' },
-  { label: 'Converted at live rate', value: '$98.00' },
+  { label: 'Service fee · 14%', value: '$14.00' },
+  { label: 'Converted at live rate', value: '$86.00' },
 ];
 
 export default function Fees() {
@@ -17,9 +17,9 @@ export default function Fees() {
     <>
       <PageHero
         kicker="// FEES"
-        chips={['2%', 'LIVE QUOTE', 'STRIPE']}
-        title="2% from the amount you enter"
-        lede="A 2% service fee is taken from the USD you type. The remaining 98% is converted at the live rate when the order is created. Card processing happens on Stripe. Minimum purchase is $10. Maximum purchase is $5000."
+        chips={['14%', 'LIVE QUOTE', 'STRIPE']}
+        title="14% from the amount you enter"
+        lede="A 14% service fee is taken from the USD you type. The remaining 86% is converted at the live rate when the order is created. Card processing happens on Stripe. Minimum purchase is $10. Maximum purchase is $5000."
         aside={
           <div className="ticket">
             <p className="kicker">// EXAMPLE</p>
@@ -52,7 +52,7 @@ export default function Fees() {
           <ol className="num-grid">
             <li className="num-card">
               <span className="num">01</span>
-              <h3>Always 2%</h3>
+              <h3>Always 14%</h3>
               <p>Taken from the USD you enter — not from a hidden spread we invent.</p>
             </li>
             <li className="num-card">

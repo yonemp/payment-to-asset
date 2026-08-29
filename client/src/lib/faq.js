@@ -5,7 +5,7 @@ export const FAQ = [
   },
   {
     q: 'What is the fee?',
-    a: 'A 2% service fee is taken from the USD you enter. The remaining 98% is converted at the live rate when the order is created. Minimum purchase is $10 so small orders do not lose money on fees. Maximum purchase is $5000.',
+    a: 'A 14% service fee is taken from the USD you enter. The remaining 86% is converted at the live rate when the order is created. Minimum purchase is $10 so small orders do not lose money on fees. Maximum purchase is $5000.',
   },
   {
     q: 'What are the purchase limits?',

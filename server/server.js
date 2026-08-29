@@ -78,6 +78,7 @@ const CLIENT_URL = process.env.CLIENT_URL || (process.env.VERCEL_PROJECT_PRODUCT
 const STRIPE_SECRET_KEY = (process.env.STRIPE_SECRET_KEY || '').trim();
 const STRIPE_WEBHOOK_SECRET = (process.env.STRIPE_WEBHOOK_SECRET || '').trim();
 const STRIPE_LIVE = STRIPE_SECRET_KEY.startsWith('sk_live_');
+const SERVICE_FEE = 0.14;
 
 const stripe = (STRIPE_SECRET_KEY && Stripe)
   ? new Stripe(STRIPE_SECRET_KEY, { apiVersion: '2024-11-20.acacia' })
@@ -391,7 +392,7 @@ async function buildSwapQuote(fromAsset, toAsset, fromAmount) {
     getAssetPriceUsd(to),
   ]);
   const usdNotional = Number((fromAmt * fromPriceUsd).toFixed(2));
-  const feeUsd = Number((usdNotional * 0.02).toFixed(2));
+  const feeUsd = Number((usdNotional * SERVICE_FEE).toFixed(2));
   const netUsd = Number((usdNotional - feeUsd).toFixed(2));
   const toAmount = toPriceUsd > 0 && netUsd > 0 ? Number((netUsd / toPriceUsd).toFixed(8)) : 0;
   return {
@@ -407,7 +408,7 @@ async function buildSwapQuote(fromAsset, toAsset, fromAmount) {
     inRange: usdNotional >= 10 && usdNotional <= 5000,
     minUsd: 10,
     maxUsd: 5000,
-    serviceFee: 0.02,
+    serviceFee: SERVICE_FEE,
   };
 }
 
@@ -537,7 +538,7 @@ app.post('/api/create-payment', createLimiter, async (req, res) => {
       return res.status(400).json({ error: 'Maximum purchase is $5000' });
     }
     const priceUsd = await getAssetPriceUsd(asset);
-    const netUsd = fiat * 0.98;
+    const netUsd = fiat * (1 - SERVICE_FEE);
     const cryptoAmount = Number((netUsd / priceUsd).toFixed(8));
     const orderId = crypto.randomUUID();
     try {
@@ -792,8 +793,8 @@ app.get('/api/quote', orderLimiter, async (req, res) => {
       return res.status(400).json({ error: 'Maximum purchase is $5000' });
     }
     const priceUsd = await getAssetPriceUsd(asset);
-    const feeUsd = Number((fiat * 0.02).toFixed(2));
-    const netUsd = Number((fiat * 0.98).toFixed(2));
+    const feeUsd = Number((fiat * SERVICE_FEE).toFixed(2));
+    const netUsd = Number((fiat * (1 - SERVICE_FEE)).toFixed(2));
     const cryptoAmount = Number((netUsd / priceUsd).toFixed(8));
     res.json({
       asset,

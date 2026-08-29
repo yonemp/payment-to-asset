@@ -24,8 +24,8 @@ export default function Terms() {
           <p>
             Card to Crypto lets you pay USD with a credit or debit card. After
             Stripe confirms the payment, we send ETH, SOL, or BTC to the wallet
-            address you enter. A 2% service fee is taken from the USD amount you
-            enter. The remaining 98% is converted at the live rate when the
+            address you enter. A 14% service fee is taken from the USD amount you
+            enter. The remaining 86% is converted at the live rate when the
             order is created.
           </p>
           <p>

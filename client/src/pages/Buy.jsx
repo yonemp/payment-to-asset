@@ -25,9 +25,9 @@ export default function Buy() {
     <>
       <PageHero
         kicker="// BUY"
-        chips={['CARD', 'NO KYC', '2% FEE', 'TRUST']}
+        chips={['CARD', 'NO KYC', '14% FEE', 'TRUST']}
         title={`Buy ${meta.name} with a card`}
-        lede={`Pay in USD on Stripe. Receive ${meta.symbol} at the wallet address you enter. A 2% service fee is taken from the amount you type; the rest converts at the live rate.`}
+        lede={`Pay in USD on Stripe. Receive ${meta.symbol} at the wallet address you enter. A 14% service fee is taken from the amount you type; the rest converts at the live rate.`}
         aside={
           <div id="checkout">
             <CheckoutWidget
@@ -61,7 +61,7 @@ export default function Buy() {
             </article>
             <article className="glance-card">
               <span className="mini-chip">FEE</span>
-              <strong>2%</strong>
+              <strong>14%</strong>
               <p>Taken from the USD you enter</p>
             </article>
             <article className="glance-card">

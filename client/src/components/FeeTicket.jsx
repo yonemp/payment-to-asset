@@ -1,4 +1,4 @@
-import { formatUsd, getAsset } from '../lib/assets';
+import { formatUsd, getAsset, SERVICE_FEE } from '../lib/assets';
 
 export default function FeeTicket({ asset, fees, quote, quoteState, mode = 'buy', fromAsset }) {
   const meta = getAsset(asset);
@@ -33,7 +33,7 @@ export default function FeeTicket({ asset, fees, quote, quoteState, mode = 'buy'
       )}
       <div className="buy-meta-row">
         <span>Service fee</span>
-        <span>2%{fees.fee ? ` · ${formatUsd(fees.fee)}` : ''}</span>
+        <span>{Math.round(SERVICE_FEE * 100)}%{fees.fee ? ` · ${formatUsd(fees.fee)}` : ''}</span>
       </div>
       <div className="buy-meta-row">
         <span>Estimated time</span>

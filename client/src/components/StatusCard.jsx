@@ -1,3 +1,5 @@
+import { SERVICE_FEE } from '../lib/assets';
+
 const RAILS = [
   { id: 'ETH', label: 'Ethereum', chain: 'Ethereum', tint: 'eth' },
   { id: 'SOL', label: 'Solana', chain: 'Solana', tint: 'sol' },
@@ -38,7 +40,7 @@ export default function StatusCard({ health }) {
       })}
       <div className="detail-row" style={{ marginTop: 8, borderBottom: 0 }}>
         <span>Fee</span>
-        <span className="accent">2%</span>
+        <span className="accent">{Math.round(SERVICE_FEE * 100)}%</span>
       </div>
       <div className="detail-row" style={{ paddingTop: 0 }}>
         <span>Checkout</span>
