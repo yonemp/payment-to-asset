@@ -79,6 +79,8 @@ const STRIPE_SECRET_KEY = (process.env.STRIPE_SECRET_KEY || '').trim();
 const STRIPE_WEBHOOK_SECRET = (process.env.STRIPE_WEBHOOK_SECRET || '').trim();
 const STRIPE_LIVE = STRIPE_SECRET_KEY.startsWith('sk_live_');
 const SERVICE_FEE = 0.14;
+const MIN_USD = 25;
+const MAX_USD = 5000;
 
 const stripe = (STRIPE_SECRET_KEY && Stripe)
   ? new Stripe(STRIPE_SECRET_KEY, { apiVersion: '2024-11-20.acacia' })
@@ -492,9 +494,9 @@ async function buildSwapQuote(fromAsset, toAsset, fromAmount) {
     feeUsd,
     netUsd,
     toAmount,
-    inRange: usdNotional >= 10 && usdNotional <= 5000,
-    minUsd: 10,
-    maxUsd: 5000,
+    inRange: usdNotional >= MIN_USD && usdNotional <= MAX_USD,
+    minUsd: MIN_USD,
+    maxUsd: MAX_USD,
     serviceFee: SERVICE_FEE,
   };
 }
@@ -618,10 +620,10 @@ app.post('/api/create-payment', createLimiter, async (req, res) => {
       return res.status(400).json({ error: addrCheck.error });
     }
     const fiat = Number(usdAmount);
-    if (!Number.isFinite(fiat) || fiat < 10) {
-      return res.status(400).json({ error: 'Minimum purchase is $10' });
+    if (!Number.isFinite(fiat) || fiat < MIN_USD) {
+      return res.status(400).json({ error: 'Minimum purchase is $25' });
     }
-    if (fiat > 5000) {
+    if (fiat > MAX_USD) {
       return res.status(400).json({ error: 'Maximum purchase is $5000' });
     }
     let priceUsd;
@@ -732,8 +734,8 @@ app.post('/api/create-swap', createLimiter, async (req, res) => {
       throw err;
     }
     if (!quote.inRange) {
-      if (quote.usdNotional < 10) {
-        return res.status(400).json({ error: 'Minimum swap is $10 equivalent' });
+      if (quote.usdNotional < MIN_USD) {
+        return res.status(400).json({ error: 'Minimum swap is $25 equivalent' });
       }
       return res.status(400).json({ error: 'Maximum swap is $5000 equivalent' });
     }
@@ -878,10 +880,10 @@ app.get('/api/quote', orderLimiter, async (req, res) => {
     if (!asset || !ADDRESS_PATTERNS[asset]) {
       return res.status(400).json({ error: 'Invalid or missing asset. Use ETH, SOL, or BTC' });
     }
-    if (!Number.isFinite(fiat) || fiat < 10) {
-      return res.status(400).json({ error: 'Minimum purchase is $10' });
+    if (!Number.isFinite(fiat) || fiat < MIN_USD) {
+      return res.status(400).json({ error: 'Minimum purchase is $25' });
     }
-    if (fiat > 5000) {
+    if (fiat > MAX_USD) {
       return res.status(400).json({ error: 'Maximum purchase is $5000' });
     }
     const priceUsd = await getAssetPriceUsd(asset);

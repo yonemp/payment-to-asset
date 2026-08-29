@@ -106,7 +106,7 @@ function BuyPanel({ asset, onAssetChange }) {
   const aboveMax = Number.isFinite(usdNum) && usdNum > MAX_USD;
   const amountOk = Number.isFinite(usdNum) && usdNum >= MIN_USD && usdNum <= MAX_USD;
   const amountMessage = belowMin
-    ? 'Minimum purchase is $10'
+    ? 'Minimum purchase is $25'
     : aboveMax
       ? 'Maximum purchase is $5000'
       : '';
@@ -147,7 +147,7 @@ function BuyPanel({ asset, onAssetChange }) {
     e.preventDefault();
     setError('');
     if (belowMin) {
-      setError('Minimum purchase is $10');
+      setError('Minimum purchase is $25');
       return;
     }
     if (aboveMax) {
@@ -301,7 +301,7 @@ function SwapPanel({ asset, onAssetChange }) {
   const amountMessage = !pairOk
     ? 'Choose a different asset to receive.'
     : belowMin
-      ? 'Minimum swap is $10 equivalent'
+      ? 'Minimum swap is $25 equivalent'
       : aboveMax
         ? 'Maximum swap is $5000 equivalent'
         : '';
@@ -379,7 +379,7 @@ function SwapPanel({ asset, onAssetChange }) {
   }, [quote]);
 
   const usdLabel = quoteState === 'ready' && quote
-    ? `≈ ${formatUsd(quote.usdNotional)} · $10–$5000`
+    ? `≈ ${formatUsd(quote.usdNotional)} · $25–$5000`
     : quoteState === 'loading'
       ? 'Converting to USD…'
       : amountPositive

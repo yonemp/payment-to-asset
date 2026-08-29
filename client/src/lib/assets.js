@@ -1,7 +1,7 @@
 export const API = '/api';
 
 export const SERVICE_FEE = 0.14;
-export const MIN_USD = 10;
+export const MIN_USD = 25;
 export const MAX_USD = 5000;
 export const AMOUNT_CHIPS = [25, 50, 100, 250];
 
