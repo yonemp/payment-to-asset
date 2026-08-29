@@ -330,26 +330,113 @@ async function findOrder(id) {
   return getOrderByShortId(id);
 }
 
-async function getAssetPriceUsd(asset) {
-  const id = COINGECKO_IDS[asset];
-  if (!id) return FALLBACK_PRICES_USD[asset] || 1;
+const PRICE_CACHE_MS = 30000;
+const priceCache = new Map();
+const COINBASE_PAIRS = { ETH: 'ETH-USD', SOL: 'SOL-USD', BTC: 'BTC-USD' };
+const BINANCE_SYMBOLS = { ETH: 'ETHUSDT', SOL: 'SOLUSDT', BTC: 'BTCUSDT' };
+
+function parsePositivePrice(value) {
+  const n = typeof value === 'number' ? value : Number(value);
+  return Number.isFinite(n) && n > 0 ? n : null;
+}
+
+async function fetchJsonWithTimeout(url, ms) {
+  const controller = new AbortController();
+  const timeout = setTimeout(function () { controller.abort(); }, ms);
   try {
-    const controller = new AbortController();
-    const timeout = setTimeout(() => controller.abort(), 4000);
-    const res = await fetch(
-      `https://api.coingecko.com/api/v3/simple/price?ids=${id}&vs_currencies=usd`,
-      { signal: controller.signal }
-    );
+    const res = await fetch(url, {
+      signal: controller.signal,
+      headers: {
+        Accept: 'application/json',
+        'User-Agent': 'CardToCrypto/1.0 (price)',
+      },
+    });
+    if (!res.ok) throw new Error('HTTP ' + res.status);
+    return await res.json();
+  } finally {
     clearTimeout(timeout);
-    if (!res.ok) throw new Error(`CoinGecko ${res.status}`);
-    const data = await res.json();
-    const price = data?.[id]?.usd;
-    if (typeof price === 'number' && price > 0) return price;
-    throw new Error('Invalid price payload');
-  } catch (err) {
-    console.warn(`[price] CoinGecko failed for ${asset}, using fallback:`, err.message);
-    return FALLBACK_PRICES_USD[asset];
   }
+}
+
+async function priceFromCoinGecko(asset) {
+  const id = COINGECKO_IDS[asset];
+  if (!id) throw new Error('no CoinGecko id');
+  const data = await fetchJsonWithTimeout(
+    'https://api.coingecko.com/api/v3/simple/price?ids=' + encodeURIComponent(id) + '&vs_currencies=usd',
+    4000
+  );
+  const price = parsePositivePrice(data && data[id] && data[id].usd);
+  if (!price) throw new Error('invalid CoinGecko payload');
+  return price;
+}
+
+async function priceFromCoinbase(asset) {
+  const pair = COINBASE_PAIRS[asset];
+  if (!pair) throw new Error('no Coinbase pair');
+  const data = await fetchJsonWithTimeout(
+    'https://api.coinbase.com/v2/prices/' + pair + '/spot',
+    4000
+  );
+  const price = parsePositivePrice(data && data.data && data.data.amount);
+  if (!price) throw new Error('invalid Coinbase payload');
+  return price;
+}
+
+async function priceFromBinance(asset) {
+  const symbol = BINANCE_SYMBOLS[asset];
+  if (!symbol) throw new Error('no Binance symbol');
+  const data = await fetchJsonWithTimeout(
+    'https://api.binance.com/api/v3/ticker/price?symbol=' + symbol,
+    4000
+  );
+  const price = parsePositivePrice(data && data.price);
+  if (!price) throw new Error('invalid Binance payload');
+  return price;
+}
+
+async function getAssetPriceUsd(asset) {
+  const cached = priceCache.get(asset);
+  if (cached && (Date.now() - cached.at) < PRICE_CACHE_MS && cached.price > 0) {
+    return cached.price;
+  }
+
+  const sources = [
+    { name: 'coinbase', fn: priceFromCoinbase },
+    { name: 'coingecko', fn: priceFromCoinGecko },
+    { name: 'binance', fn: priceFromBinance },
+  ];
+
+  const raced = await Promise.allSettled(sources.map(function (src) {
+    return src.fn(asset).then(function (price) {
+      return { name: src.name, price: price };
+    });
+  }));
+
+  let winner = null;
+  const errors = [];
+  for (let i = 0; i < raced.length; i++) {
+    const r = raced[i];
+    if (r.status === 'fulfilled' && r.value && r.value.price > 0) {
+      if (!winner) winner = r.value;
+    } else if (r.status === 'rejected') {
+      errors.push(sources[i].name + ': ' + (r.reason && r.reason.message ? r.reason.message : String(r.reason)));
+    }
+  }
+
+  if (winner) {
+    priceCache.set(asset, { price: winner.price, at: Date.now(), source: winner.name });
+    return winner.price;
+  }
+
+  if (cached && cached.price > 0) {
+    console.warn('[price] all live feeds failed for ' + asset + ', using last live ' + cached.source + ' @ ' + cached.price + ' — ' + errors.join('; '));
+    return cached.price;
+  }
+
+  console.warn('[price] all live feeds failed for ' + asset + ' — ' + errors.join('; '));
+  const err = new Error('Live ' + asset + ' price unavailable');
+  err.status = 502;
+  throw err;
 }
 
 function requireLiveStripe(res) {
@@ -537,7 +624,12 @@ app.post('/api/create-payment', createLimiter, async (req, res) => {
     if (fiat > 5000) {
       return res.status(400).json({ error: 'Maximum purchase is $5000' });
     }
-    const priceUsd = await getAssetPriceUsd(asset);
+    let priceUsd;
+    try {
+      priceUsd = await getAssetPriceUsd(asset);
+    } catch (err) {
+      return res.status(502).json({ error: 'Live price unavailable', detail: err.message });
+    }
     const netUsd = fiat * (1 - SERVICE_FEE);
     const cryptoAmount = Number((netUsd / priceUsd).toFixed(8));
     const orderId = crypto.randomUUID();
@@ -796,6 +888,7 @@ app.get('/api/quote', orderLimiter, async (req, res) => {
     const feeUsd = Number((fiat * SERVICE_FEE).toFixed(2));
     const netUsd = Number((fiat * (1 - SERVICE_FEE)).toFixed(2));
     const cryptoAmount = Number((netUsd / priceUsd).toFixed(8));
+    const priced = priceCache.get(asset);
     res.json({
       asset,
       usdAmount: fiat,
@@ -803,6 +896,7 @@ app.get('/api/quote', orderLimiter, async (req, res) => {
       netUsd,
       priceUsd,
       cryptoAmount,
+      priceSource: priced && priced.source ? priced.source : 'live',
     });
   } catch (err) {
     console.error('[quote]', err);
