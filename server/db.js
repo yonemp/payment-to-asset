@@ -190,6 +190,7 @@ function schemaSql(driver) {
       '  deposit_tx TEXT,',
       '  payout_tx TEXT,',
       '  payout_note TEXT,',
+      '  telegram_notified_at TEXT,',
       '  created_at TEXT NOT NULL DEFAULT (datetime(\'now\')),',
       '  updated_at TEXT NOT NULL DEFAULT (datetime(\'now\'))',
       ');',
@@ -212,6 +213,7 @@ function schemaSql(driver) {
     '  to_asset TEXT,',
     '  from_amount DOUBLE PRECISION,',
     '  deposit_address TEXT,',
+    '  telegram_notified_at TIMESTAMPTZ,',
     '  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),',
     '  updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()',
     ');',
@@ -233,6 +235,7 @@ function migrateSql(driver) {
       'ALTER TABLE orders ADD COLUMN deposit_tx TEXT',
       'ALTER TABLE orders ADD COLUMN payout_tx TEXT',
       'ALTER TABLE orders ADD COLUMN payout_note TEXT',
+      'ALTER TABLE orders ADD COLUMN telegram_notified_at TEXT',
     ];
   }
   return [
@@ -246,6 +249,7 @@ function migrateSql(driver) {
     'ALTER TABLE orders ADD COLUMN IF NOT EXISTS deposit_tx TEXT',
     'ALTER TABLE orders ADD COLUMN IF NOT EXISTS payout_tx TEXT',
     'ALTER TABLE orders ADD COLUMN IF NOT EXISTS payout_note TEXT',
+    'ALTER TABLE orders ADD COLUMN IF NOT EXISTS telegram_notified_at TIMESTAMPTZ',
   ];
 }
 

@@ -45,6 +45,8 @@ Set in Vercel Production. Never commit real values.
 - ETH_RPC_URL
 - SOL_RPC_URL
 - BTC_API_URL
+- TELEGRAM_BOT_TOKEN
+- TELEGRAM_CHAT_ID
 
 ## API
 

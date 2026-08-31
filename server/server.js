@@ -71,6 +71,7 @@ const {
 } = payouts;
 
 const swapSettle = require('./swap-settle');
+const telegram = require('./telegram');
 
 const PORT = process.env.PORT || 3001;
 const HOST = process.env.HOST || '127.0.0.1';
@@ -332,6 +333,34 @@ async function findOrder(id) {
   return getOrderByShortId(id);
 }
 
+async function notifyPaidOnce(order) {
+  try {
+    await telegram.notifyPaidOrder(db, order, nowExpr(db.driver));
+  } catch (err) {
+    console.warn('[telegram] notify', err.message);
+  }
+}
+
+async function maybeNotifyFromVerifiedStripe(order) {
+  if (!order || telegram.isSwapLike(order) || !stripe) return;
+  if (!telegram.configured()) return;
+  if (order.telegram_notified_at) return;
+  try {
+    let paid = false;
+    const sid = order.stripe_session_id;
+    if (sid && isStripeSessionId(sid)) {
+      const session = await stripe.checkout.sessions.retrieve(sid);
+      paid = Boolean(session && session.payment_status === 'paid');
+    } else if (order.stripe_payment_intent_id && isStripePaymentIntentId(order.stripe_payment_intent_id)) {
+      const intent = await stripe.paymentIntents.retrieve(order.stripe_payment_intent_id);
+      paid = Boolean(intent && intent.status === 'succeeded');
+    }
+    if (paid) await notifyPaidOnce(order);
+  } catch (err) {
+    console.warn('[telegram] success-page verify', err.message);
+  }
+}
+
 const PRICE_CACHE_MS = 30000;
 const priceCache = new Map();
 const COINBASE_PAIRS = { ETH: 'ETH-USD', SOL: 'SOL-USD', BTC: 'BTC-USD' };
@@ -576,6 +605,7 @@ app.post(
         console.warn('[webhook] No order for session', sessionId);
         return res.json({ received: true });
       }
+      await notifyPaidOnce(order);
       if (order.status === 'completed' && order.tx_hash) {
         return res.json({ received: true });
       }
@@ -600,6 +630,21 @@ app.post(
         });
         console.error(`[payout] Order ${order.id} failed:`, err.message);
       }
+    }
+
+    if (event.type === 'payment_intent.succeeded') {
+      const pi = event.data.object;
+      const piId = pi && pi.id;
+      let order = null;
+      try {
+        if (piId) order = await getOrderByPaymentIntent(piId);
+        if (!order && pi && pi.metadata && pi.metadata.order_id) {
+          order = await getOrderById(pi.metadata.order_id);
+        }
+      } catch (err) {
+        console.warn('[webhook] pi lookup', err.message);
+      }
+      if (order) await notifyPaidOnce(order);
     }
 
     res.json({ received: true });
@@ -851,6 +896,7 @@ app.get('/api/order/:id', orderLimiter, async (req, res) => {
     if (!order) {
       return res.status(404).json({ error: 'Order not found', code: 'ORDER_NOT_FOUND' });
     }
+    await maybeNotifyFromVerifiedStripe(order);
     if (swapSettle.isSwap(order) && order.status !== 'completed' && order.status !== 'failed') {
       try {
         const allowPayout = String(process.env.SWAP_PAYOUT_ON_API || '') === '1';
@@ -927,6 +973,7 @@ app.get('/api/health', async (_req, res) => {
     mode: 'live',
     stripe: STRIPE_LIVE,
     webhook: Boolean(STRIPE_WEBHOOK_SECRET),
+    telegram: telegram.configured(),
     store,
     store_code: store === 'down' ? 'STORE_DOWN' : undefined,
     driver: db && db.driver ? db.driver : 'down',
