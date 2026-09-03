@@ -2,7 +2,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import Timeline from '../components/Timeline';
 import { fetchOrder } from '../lib/api';
-import { formatCrypto, formatUsd, getAsset, shorten } from '../lib/assets';
+import { formatCredits, formatCrypto, formatUsd, getAsset, shorten } from '../lib/assets';
 
 function CopyableId({ value, label }) {
   const [copied, setCopied] = useState(false);
@@ -78,10 +78,12 @@ export default function Success() {
   }, []);
 
   const isSwap = order && order.kind === 'swap';
+  const isCredits = order && (order.kind === 'credits' || order.product === 'credits' || order.asset === 'CREDITS');
   const toCode = (order && (order.to_asset || order.asset)) || 'SOL';
   const fromCode = (order && order.from_asset) || null;
   const meta = getAsset(toCode);
   const fromMeta = fromCode ? getAsset(fromCode) : null;
+  const creditCode = order && order.credit_code;
   const explorerUrl =
     order?.explorer_url ||
     (order?.tx_hash && meta ? meta.explorer(order.tx_hash) : null);
@@ -96,7 +98,7 @@ export default function Success() {
           <p>
             {isSwap
               ? 'Deposit → Quoted → Settling → Delivered. This page updates until the outbound transfer lands or fails. We do not mark a swap complete until it actually settles.'
-              : 'Paid → Quoted → Broadcasting → Confirmed. This page updates until the transfer lands or fails.'}
+              : 'Paid → Credits issued. Copy your credit code. Lookup by order ID or credit code. Redeem site coming soon.'}
           </p>
         </div>
 
@@ -129,7 +131,7 @@ export default function Success() {
                 <>
                   <div className="ticket-top">
                     <span className={`status-pill ${order.status}`}>{order.status}</span>
-                    <span className="pill">{isSwap ? `${order.from_asset} → ${toCode}` : order.asset}</span>
+                    <span className="pill">{isSwap ? `${order.from_asset} → ${toCode}` : (isCredits ? 'CREDITS' : order.asset)}</span>
                   </div>
                   <Timeline order={order} />
 
@@ -181,12 +183,26 @@ export default function Success() {
 
                   {order.status === 'failed' && (
                     <div className="banner error">
-                      {isSwap ? 'Swap failed. The outbound transfer was not broadcast.' : 'Payout failed. The transfer was not broadcast.'}
+                      {isCredits
+                        ? 'Payment or credit issue. Contact support with this order ID.'
+                        : (isSwap ? 'Swap failed. The outbound transfer was not broadcast.' : 'Payout failed. The transfer was not broadcast.')}
                       {' '}Contact support with this order ID.
                     </div>
                   )}
 
-                  {order.status === 'completed' && explorerUrl && (
+                  {isCredits && creditCode && (
+                    <CopyableId value={creditCode} label="Credit code" />
+                  )}
+
+                  {isCredits && (
+                    <p className="deposit-help">
+                      {order.status === 'completed'
+                        ? 'Credits are on this code. Redeem site coming soon.'
+                        : 'Credits are issued after the card confirms. Save the code and order ID.'}
+                    </p>
+                  )}
+
+                  {order.status === 'completed' && explorerUrl && !isCredits && (
                     <a
                       href={explorerUrl}
                       target="_blank"
@@ -203,8 +219,11 @@ export default function Success() {
             <aside className="ticket ticket-side">
               <h2 className="ticket-kicker">Order</h2>
               {displayId && <CopyableId value={displayId} label="Order ID" />}
+              {displayId && isCredits && creditCode && displayId !== creditCode && (
+                <CopyableId value={creditCode} label="Credit code" />
+              )}
               {!order ? (
-                <p className="muted">Save the full order ID. Use it on the lookup page if you come back later.</p>
+                <p className="muted">Save the full order ID and credit code. Use Lookup if you come back later.</p>
               ) : (
                 <>
                   {isSwap ? (
@@ -234,6 +253,29 @@ export default function Success() {
                       <div className="detail-row">
                         <span>Destination</span>
                         <span className="mono">{shorten(order.wallet_address, 10, 8)}</span>
+                      </div>
+                    </>
+                  ) : isCredits ? (
+                    <>
+                      <div className="detail-row">
+                        <span>Product</span>
+                        <span>Credits</span>
+                      </div>
+                      <div className="detail-row">
+                        <span>You paid</span>
+                        <span>{formatUsd(order.fiat_amount)}</span>
+                      </div>
+                      <div className="detail-row">
+                        <span>Credits</span>
+                        <span className="mono">{formatCredits(order.credits_amount)}</span>
+                      </div>
+                      <div className="detail-row">
+                        <span>Remaining</span>
+                        <span className="mono">{formatCredits(order.remaining_balance)}</span>
+                      </div>
+                      <div className="detail-row">
+                        <span>Redeem</span>
+                        <span>{order.redeem_note || 'Redeem site coming soon'}</span>
                       </div>
                     </>
                   ) : (
@@ -283,7 +325,7 @@ export default function Success() {
                 </>
               )}
               <div className="side-links">
-                <Link to="/buy/sol">Buy again</Link>
+                <Link to="/buy/sol">Buy credits</Link>
                 <Link to="/lookup">Look up another</Link>
               </div>
             </aside>

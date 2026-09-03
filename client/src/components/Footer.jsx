@@ -10,7 +10,7 @@ export default function Footer() {
             <BrandMark size={28} />
             <span className="brand-word">Card to Crypto</span>
           </Link>
-          <p>The only true card to crypto</p>
+          <p>Buy credits with a card. Redeem later.</p>
           <p className="footer-tag">
             No KYC · <a href="https://www.cardtosol.com/">cardtosol.com</a> · <a href="https://www.cardtobtc.com/">cardtobtc.com</a>
           </p>
@@ -28,9 +28,9 @@ export default function Footer() {
         <div>
           <h2 className="footer-head">Buy</h2>
           <ul>
-            <li><Link to="/buy/sol">Solana</Link></li>
-            <li><Link to="/buy/eth">Ethereum</Link></li>
-            <li><Link to="/buy/btc">Bitcoin</Link></li>
+            <li><Link to="/buy/sol">Credits</Link></li>
+            <li><Link to="/fees">Fees</Link></li>
+            <li><Link to="/lookup">Lookup</Link></li>
           </ul>
         </div>
         <div>

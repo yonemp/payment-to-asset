@@ -14,13 +14,13 @@ export default function Faq() {
     <>
       <PageHero
         kicker="// FAQ"
-        chips={['DELIVERY', 'FEES', 'WALLETS']}
+        chips={['CREDITS', 'FEES', 'LOOKUP']}
         title="Before you pay"
-        lede="Delivery, fees, wallets, and quotes. If you already have an order ID, use Lookup."
+        lede="Credits, fees, and lookup. If you already have an order ID or credit code, use Lookup."
       >
         <div className="actions">
           <Link className="btn btn-primary" to="/buy/sol">
-            Buy Solana
+            Buy credits
           </Link>
           <Link className="btn btn-ghost" to="/lookup">
             Lookup

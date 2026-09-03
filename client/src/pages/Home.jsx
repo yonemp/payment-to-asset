@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import CheckoutWidget from '../components/CheckoutWidget';
 
@@ -6,17 +6,17 @@ const STEPS = [
   {
     n: '01',
     title: 'Pay',
-    body: 'Enter USD, pick SOL, ETH, or BTC, and pay with a card checkout.',
+    body: 'Enter USD and pay with a card checkout. No wallet and no KYC on this site.',
   },
   {
     n: '02',
-    title: 'Quote',
-    body: 'A 14% fee comes out of the amount you type. The remaining 86% is sized at the live rate.',
+    title: 'Credits',
+    body: 'A 14% fee comes out of the amount you type. The remaining 86% becomes your credit balance, $1 net = 1 credit.',
   },
   {
     n: '03',
-    title: 'Deliver',
-    body: 'After the card confirms we broadcast to the wallet address you entered.',
+    title: 'Redeem later',
+    body: 'Copy your credit code. Redeem for crypto on our redeem site — coming soon.',
   },
 ];
 
@@ -25,49 +25,39 @@ const TOPICS = [
     n: '01',
     mark: '◎',
     to: '/buy/sol',
-    title: 'Buy Solana',
-    body: 'The featured product. Pay in USD with a card. SOL lands in the wallet you name.',
-    tags: 'SOL · card · 14% fee',
+    title: 'Buy credits',
+    body: 'Pay in USD with a card. Credits are issued after payment. Redeem for crypto later.',
+    tags: 'Credits · card · 14% fee',
     wide: true,
     dark: true,
   },
   {
     n: '02',
-    mark: '◇',
-    to: '/buy/eth',
-    title: 'Buy Ethereum',
-    body: 'Same checkout, different asset. Card payment, live quote, delivery to your address.',
-    tags: 'ETH · card · wallet',
-  },
-  {
-    n: '03',
-    mark: '⬡',
-    to: '/buy/btc',
-    title: 'Buy Bitcoin',
-    body: 'Buy BTC with a credit or debit card. We send to a bc1, 1, or 3 address you control.',
-    tags: 'BTC · card · on-chain',
-  },
-  {
-    n: '04',
     mark: '%',
     to: '/fees',
     title: 'Fees',
-    body: 'A 14% service fee is taken from the USD you enter. The rest converts at the live rate.',
-    tags: '14% · live quote',
+    body: 'A 14% service fee is taken from the USD you enter. The rest is your credit balance.',
+    tags: '14% · $1 net = 1 credit',
   },
   {
-    n: '05',
+    n: '03',
     mark: '?',
     to: '/faq',
     title: 'FAQ',
-    body: 'Delivery time, wallets, quotes, and what happens if an address is wrong.',
+    body: 'How credits work, lookup, and what redeem later means.',
     tags: 'Answers · before you pay',
+  },
+  {
+    n: '04',
+    mark: '◇',
+    to: '/lookup',
+    title: 'Lookup',
+    body: 'Find an order by ID or credit code. Balance and redeem status are on that page.',
+    tags: 'Order ID · credit code',
   },
 ];
 
 export default function Home() {
-  const [asset, setAsset] = useState('SOL');
-
   useEffect(() => {
     document.title = 'No KYC Card to Crypto';
   }, []);
@@ -76,28 +66,28 @@ export default function Home() {
     <>
       <section className="hero">
         <div className="hero-grid-bg" aria-hidden="true" />
-        <p className="hero-float hero-float-tl mono" aria-hidden="true">$ cardtocrypto buy --sol</p>
+        <p className="hero-float hero-float-tl mono" aria-hidden="true">$ cardtocrypto buy --credits</p>
         <p className="hero-float hero-float-tr mono" aria-hidden="true">const paid = true</p>
-        <p className="hero-float hero-float-bl mono" aria-hidden="true">quote.charge.deliver()</p>
-        <p className="hero-float hero-float-br mono" aria-hidden="true">await wallet.receive()</p>
-        <p className="hero-float hero-float-c mono" aria-hidden="true">CARD · QUOTE · WALLET</p>
+        <p className="hero-float hero-float-bl mono" aria-hidden="true">charge.credit()</p>
+        <p className="hero-float hero-float-br mono" aria-hidden="true">code.copy()</p>
+        <p className="hero-float hero-float-c mono" aria-hidden="true">CARD · CREDITS · REDEEM</p>
 
         <div className="wrap hero-grid">
           <div className="hero-copy">
-            <p className="eyebrow">Buy SOL, ETH, or BTC with a card · no KYC</p>
+            <p className="eyebrow">Buy credits with a card · no KYC</p>
             <h1>
-              Buy crypto
+              Buy credits
               <br />
               with a card
             </h1>
             <p className="lede">
-              Card to Crypto turns a card payment into SOL, ETH, or BTC in the
-              wallet you name. You send USD. You get the asset. Solana is the
-              featured product.
+              Card to Crypto sells credits. Pay USD with a card. After the
+              14% fee, the rest is credited to a code you can copy. Redeem
+              for crypto on our redeem site — coming soon.
             </p>
             <div className="actions">
               <a className="btn btn-primary" href="#checkout">
-                Buy Solana
+                Buy credits
               </a>
               <Link className="btn btn-ghost" to="/fees">
                 See fees
@@ -106,18 +96,18 @@ export default function Home() {
           </div>
 
           <aside className="hero-widget" id="checkout">
-            <CheckoutWidget asset={asset} onAssetChange={setAsset} />
+            <CheckoutWidget />
           </aside>
         </div>
       </section>
 
       <section className="section band-white" id="who">
         <div className="wrap center-head">
-          <p className="kicker">// THE ON-RAMP</p>
-          <h2>A card checkout that delivers crypto</h2>
+          <p className="kicker">// CREDITS</p>
+          <h2>A card checkout that issues credits</h2>
           <p className="lede">
-            You pay in USD. We quote at the live rate, take a 14% service fee,
-            and send the asset to your wallet after the card confirms.
+            You pay in USD. We take a 14% service fee. The remaining 86%
+            becomes your credit balance. This site does not send crypto.
           </p>
         </div>
         <div className="wrap num-grid">
@@ -134,14 +124,14 @@ export default function Home() {
       <section className="section band-soft" id="what">
         <div className="wrap section-split">
           <div>
-            <p className="kicker">// PRODUCTS</p>
+            <p className="kicker">// PAGES</p>
             <h2>What you can open</h2>
             <p className="lede">
               Each topic is its own page — not a jump link on this one.
             </p>
           </div>
           <Link className="text-link" to="/buy/sol">
-            Buy Solana →
+            Buy credits →
           </Link>
         </div>
         <div className="wrap topic-bento">
@@ -167,13 +157,13 @@ export default function Home() {
         <div className="wrap">
           <div className="cta-band">
             <p className="kicker">// READY</p>
-            <h2>Want SOL now?</h2>
+            <h2>Want credits now?</h2>
             <p className="lede">
-              Open the Solana checkout. Enter a wallet you control. Pay with a card.
+              Open checkout. Enter USD. Pay with a card. Copy your credit code when you are done.
             </p>
             <div className="actions center">
               <a className="btn btn-primary" href="#checkout">
-                Buy Solana
+                Buy credits
               </a>
               <Link className="btn btn-ghost" to="/faq">
                 Read the FAQ

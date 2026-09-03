@@ -53,7 +53,7 @@ export default function Nav() {
         <div className="nav-end">
           <ThemeToggle />
           <Link to="/buy/sol" className="btn btn-nav">
-            Buy now
+            Buy credits
           </Link>
           <button
             type="button"
@@ -77,7 +77,7 @@ export default function Nav() {
           </Link>
         ))}
         <Link to="/buy/sol" className="btn btn-primary" onClick={close}>
-          Buy now
+          Buy credits
         </Link>
       </div>
     </header>

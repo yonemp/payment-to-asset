@@ -5,7 +5,7 @@ import AssetPicker from './AssetPicker';
 import FeeTicket from './FeeTicket';
 import SwapWalletBar from './SwapWalletBar';
 import WalletField from './WalletField';
-import { createPayment, fetchQuote, fetchSwapQuote } from '../lib/api';
+import { createPayment, fetchSwapQuote } from '../lib/api';
 import { useSwapSender } from '../lib/wallets';
 import { feeMath, formatUsd, getAsset, MAX_USD, MIN_USD, validateAddress } from '../lib/assets';
 
@@ -89,18 +89,13 @@ function ModeTabs({ tab, onChange }) {
   );
 }
 
-function BuyPanel({ asset, onAssetChange }) {
+function BuyPanel() {
   const [searchParams] = useSearchParams();
-  const [wallet, setWallet] = useState('');
   const [usd, setUsd] = useState('100');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
-  const [quote, setQuote] = useState(null);
-  const [quoteState, setQuoteState] = useState('idle');
 
-  const meta = getAsset(asset);
   const fees = useMemo(() => feeMath(usd), [usd]);
-  const addr = validateAddress(asset, wallet);
   const usdNum = Number(usd);
   const belowMin = Number.isFinite(usdNum) && usdNum < MIN_USD;
   const aboveMax = Number.isFinite(usdNum) && usdNum > MAX_USD;
@@ -110,38 +105,13 @@ function BuyPanel({ asset, onAssetChange }) {
     : aboveMax
       ? 'Maximum purchase is $5000'
       : '';
-  const canPay = addr.ok && amountOk && !loading;
+  const canPay = amountOk && !loading;
 
   useEffect(() => {
     if (searchParams.get('canceled') === '1') {
       setError('Payment canceled. You can adjust the ticket and try again.');
     }
   }, [searchParams]);
-
-  useEffect(() => {
-    if (!amountOk) {
-      setQuote(null);
-      setQuoteState('idle');
-      return undefined;
-    }
-    const controller = new AbortController();
-    const timer = setTimeout(async () => {
-      setQuoteState('loading');
-      try {
-        const data = await fetchQuote(asset, usdNum, controller.signal);
-        setQuote(data);
-        setQuoteState('ready');
-      } catch (err) {
-        if (err.name === 'AbortError') return;
-        setQuote(null);
-        setQuoteState('unavailable');
-      }
-    }, 280);
-    return () => {
-      clearTimeout(timer);
-      controller.abort();
-    };
-  }, [asset, usdNum, amountOk]);
 
   async function handlePay(e) {
     e.preventDefault();
@@ -157,11 +127,7 @@ function BuyPanel({ asset, onAssetChange }) {
     if (!canPay) return;
     setLoading(true);
     try {
-      const data = await createPayment({
-        asset,
-        walletAddress: wallet.trim(),
-        usdAmount: usdNum,
-      });
+      const data = await createPayment({ usdAmount: usdNum });
       window.location.href = data.purchase_url || data.url;
     } catch (err) {
       setError(err.message);
@@ -169,19 +135,7 @@ function BuyPanel({ asset, onAssetChange }) {
     }
   }
 
-  const recvAmount =
-    quoteState === 'ready' && quote
-      ? formatGet(quote.cryptoAmount)
-      : quoteState === 'loading'
-        ? 'Quoting…'
-        : '—';
-
-  const offerAmt =
-    quoteState === 'ready' && quote ? formatGet(quote.cryptoAmount) : '—';
-
-  function handleAsset(next) {
-    if (onAssetChange) onAssetChange(next);
-  }
+  const recvAmount = amountOk ? `~ ${fees.net.toFixed(2)}` : '—';
 
   return (
     <form className="buy-form" id="panel-buy" role="tabpanel" aria-labelledby="tab-buy" onSubmit={handlePay}>
@@ -205,7 +159,6 @@ function BuyPanel({ asset, onAssetChange }) {
                   <rect width="11" height="10" fill="#3c3b6e" />
                 </svg>
                 USD
-                <span className="chev">▾</span>
               </span>
               <span className="pair-name">US Dollar</span>
             </div>
@@ -217,11 +170,21 @@ function BuyPanel({ asset, onAssetChange }) {
         <div className="xfer-pane">
           <span className="xfer-label">You get</span>
           <div className="xfer-row">
-            <AssetPicker value={asset} onChange={handleAsset} disabled={loading} />
-            <span className={`recv-amt${quoteState === 'ready' ? '' : ' is-wait'}`}>
+            <div className="pair-left">
+              <span className="pair-code">
+                <svg className="flag" viewBox="0 0 24 24" aria-hidden="true">
+                  <rect width="24" height="24" rx="12" fill="#111" />
+                  <text x="12" y="16" textAnchor="middle" fontSize="11" fill="#fff" fontFamily="ui-monospace, monospace">CR</text>
+                </svg>
+                CR
+              </span>
+              <span className="pair-name">Credits</span>
+            </div>
+            <span className={`recv-amt${amountOk ? '' : ' is-wait'}`}>
               {recvAmount}
             </span>
           </div>
+          <p className="xfer-sub">14% fee comes out first. $1 net = 1 credit.</p>
         </div>
       </div>
 
@@ -231,16 +194,18 @@ function BuyPanel({ asset, onAssetChange }) {
           <span>Card checkout</span>
         </div>
         <div className="offer-row">
-          <span className="offer-logo" aria-hidden="true">S</span>
+          <span className="offer-logo" aria-hidden="true">C</span>
           <div className="offer-copy">
             <strong>Card</strong>
             <span>Credit / debit card</span>
           </div>
-          <span className="offer-amt">{offerAmt}</span>
+          <span className="offer-amt">{recvAmount}</span>
         </div>
       </div>
 
-      <WalletField asset={asset} value={wallet} onChange={setWallet} disabled={loading} />
+      <p className="hint" style={{ marginTop: 4 }}>
+        Redeem later for SOL, ETH, or BTC on our redeem site — coming soon. No wallet needed at checkout.
+      </p>
 
       <button type="submit" className="btn btn-pay" disabled={!canPay}>
         {loading ? (
@@ -249,21 +214,17 @@ function BuyPanel({ asset, onAssetChange }) {
             Opening checkout…
           </>
         ) : (
-          `Buy ${meta.symbol}`
+          'Buy credits'
         )}
       </button>
 
       <p className="no-kyc-line mono">No KYC</p>
 
-      <FeeTicket asset={asset} fees={fees} quote={quote} quoteState={quoteState} />
+      <FeeTicket fees={fees} mode="credits" />
 
       <p className="widget-foot mono">
-        $ quote --asset {meta.symbol.toLowerCase()}
-        {quoteState === 'ready' && quote?.priceUsd
-          ? `  ·  ${formatUsd(quote.priceUsd)}`
-          : quoteState === 'loading'
-            ? '  ·  live…'
-            : ''}
+        $ buy --credits
+        {amountOk ? `  ·  ${formatUsd(fees.net)} after fee` : ''}
       </p>
     </form>
   );

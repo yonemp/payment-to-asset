@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { fetchOrder } from '../lib/api';
+import { CREDIT_CODE_RE } from '../lib/assets';
 
 const UUID_HINT = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 const SESSION_HINT = /^(cs_(live|test)_[A-Za-z0-9]+|ch_[A-Za-z0-9]+)$/i;
@@ -11,6 +12,7 @@ const PREFIX_HINT = /^[0-9a-f]{8}(-[0-9a-f]{0,4}){0,4}[0-9a-f-]*$/i;
 function classifyId(raw) {
   const trimmed = String(raw || '').trim();
   if (!trimmed) return { trimmed, kind: 'empty' };
+  if (CREDIT_CODE_RE.test(trimmed)) return { trimmed, kind: 'credit' };
   if (UUID_HINT.test(trimmed)) return { trimmed, kind: 'order' };
   if (SESSION_HINT.test(trimmed)) return { trimmed, kind: 'session' };
   if (INTENT_HINT.test(trimmed)) return { trimmed, kind: 'intent' };
@@ -38,11 +40,11 @@ export default function Lookup() {
     e.preventDefault();
     setError('');
     if (parsed.kind === 'empty') {
-      setError('Enter the full order ID, a shortened order ID, or a checkout session / payment id.');
+      setError('Enter the full order ID, a credit code, a shortened order ID, or a checkout session / payment id.');
       return;
     }
     if (parsed.kind === 'unknown') {
-      setError('Use a full order ID, a shortened order ID from the success page, or a checkout session / payment id.');
+      setError('Use a full order ID, a credit code (CTC-…), a shortened order ID, or a checkout session / payment id.');
       return;
     }
     setLoading(true);
@@ -57,7 +59,9 @@ export default function Lookup() {
   }
 
   const hint =
-    parsed.kind === 'order'
+    parsed.kind === 'credit'
+      ? 'Looks like a credit code.'
+      : parsed.kind === 'order'
       ? 'Looks like an order ID.'
       : parsed.kind === 'session'
         ? 'Looks like a checkout session id.'
@@ -66,8 +70,8 @@ export default function Lookup() {
           : parsed.kind === 'short' || parsed.kind === 'prefix'
             ? 'Looks like a shortened order ID — we will match it if it is unique.'
             : parsed.kind === 'unknown'
-              ? 'Use a UUID, a shortened order ID, or a checkout session / payment id.'
-              : 'Full order ID from the success page, or a checkout session / payment id';
+              ? 'Use a UUID, a credit code, a shortened order ID, or a checkout session / payment id.'
+              : 'Full order ID or credit code from the success page';
 
   return (
     <section className="section status-page">
@@ -76,7 +80,7 @@ export default function Lookup() {
           <p className="kicker">// Lookup</p>
           <h1>Find an order</h1>
           <p>
-            Paste the full order ID from the success page. A checkout session id or payment id from the receipt also works.
+            Paste the full order ID or credit code from the success page. A checkout session id or payment id from the receipt also works.
           </p>
         </div>
 
@@ -88,7 +92,7 @@ export default function Lookup() {
           )}
           <div className="field">
             <label htmlFor="order-id" className="field-label">
-              Order ID
+              Order ID or credit code
             </label>
             <input
               id="order-id"
@@ -96,7 +100,7 @@ export default function Lookup() {
               type="text"
               value={id}
               onChange={(e) => setId(e.target.value)}
-              placeholder="order UUID, cs_live_…, or pi_…"
+              placeholder="order UUID, CTC-…, or checkout / payment id"
               autoComplete="off"
               spellCheck="false"
               disabled={loading}

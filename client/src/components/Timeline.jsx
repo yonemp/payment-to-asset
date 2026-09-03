@@ -5,6 +5,12 @@ const BUY_STEPS = [
   { key: 'confirmed', label: 'Confirmed', wait: 'Waiting for the explorer link' },
 ];
 
+const CREDITS_STEPS = [
+  { key: 'paid', label: 'Paid', wait: 'Waiting for card confirmation' },
+  { key: 'credited', label: 'Credits issued', wait: 'Balance is issued after the card confirms' },
+  { key: 'redeem', label: 'Redeem', wait: 'Redeem site coming soon' },
+];
+
 const SWAP_STEPS = [
   { key: 'deposit', label: 'Deposit', wait: 'Send the from-asset to the deposit address' },
   { key: 'quoted', label: 'Quoted', wait: 'Conversion sized at live rate' },
@@ -13,7 +19,23 @@ const SWAP_STEPS = [
 ];
 
 export function timelineState(order) {
-  const kind = order && order.kind === 'swap' ? 'swap' : 'buy';
+  const kind = order && (order.kind === 'swap' ? 'swap' : (order.kind === 'credits' || order.product === 'credits' || order.asset === 'CREDITS' ? 'credits' : 'buy'));
+  if (kind === 'credits') {
+    if (!order) {
+      return { paid: 'wait', credited: 'wait', redeem: 'wait' };
+    }
+    const { status } = order;
+    if (status === 'failed') {
+      return { paid: 'done', credited: 'fail', redeem: 'wait' };
+    }
+    if (status === 'completed') {
+      return { paid: 'done', credited: 'done', redeem: 'wait' };
+    }
+    if (status === 'processing') {
+      return { paid: 'done', credited: 'active', redeem: 'wait' };
+    }
+    return { paid: 'active', credited: 'wait', redeem: 'wait' };
+  }
   if (kind === 'swap') {
     if (!order) {
       return { deposit: 'wait', quoted: 'wait', settling: 'wait', delivered: 'wait' };
@@ -47,8 +69,8 @@ export function timelineState(order) {
 }
 
 export default function Timeline({ order }) {
-  const kind = order && order.kind === 'swap' ? 'swap' : 'buy';
-  const steps = kind === 'swap' ? SWAP_STEPS : BUY_STEPS;
+  const kind = order && (order.kind === 'swap' ? 'swap' : (order.kind === 'credits' || order.product === 'credits' || order.asset === 'CREDITS' ? 'credits' : 'buy'));
+  const steps = kind === 'swap' ? SWAP_STEPS : kind === 'credits' ? CREDITS_STEPS : BUY_STEPS;
   const state = timelineState(order);
 
   return (
@@ -63,6 +85,9 @@ export default function Timeline({ order }) {
               <strong>{step.label}</strong>
               <p>
                 {st === 'done' && step.key === 'paid' && 'Card payment received'}
+                {st === 'done' && step.key === 'credited' && (order && order.credits_amount != null
+                  ? `${order.credits_amount} credits on this order`
+                  : 'Credit balance issued')}
                 {st === 'done' && step.key === 'deposit' && (order && order.deposit_address
                   ? `Send ${order.from_amount} ${order.from_asset} to the deposit address`
                   : 'Deposit address was not configured')}

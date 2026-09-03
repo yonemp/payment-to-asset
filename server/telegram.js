@@ -28,7 +28,27 @@ function formatUsd(amount) {
   return '$' + n.toFixed(2);
 }
 
+function creditsAmountOf(order) {
+  if (order && order.credits_amount != null && Number.isFinite(Number(order.credits_amount))) {
+    return Number(order.credits_amount).toFixed(2);
+  }
+  const fiat = Number(order && order.fiat_amount);
+  if (!Number.isFinite(fiat)) return '?';
+  const fee = Number((fiat * 0.14).toFixed(2));
+  return Number((fiat - fee).toFixed(2)).toFixed(2);
+}
+
 function paidMessage(order) {
+  const kind = order && order.kind;
+  const isCredits = kind === 'credits' || String((order && order.asset) || '').toUpperCase() === 'CREDITS' || order && order.credit_code;
+  if (isCredits) {
+    return [
+      'Card to Crypto \u2014 credits purchased',
+      formatUsd(order && order.fiat_amount) + ' \u2192 ' + creditsAmountOf(order) + ' credits',
+      'Order: ' + (order && order.id ? order.id : '(unknown)'),
+      'Code: ' + (order && order.credit_code ? order.credit_code : (order && order.wallet_address ? order.wallet_address : '(pending)')),
+    ].join('\n');
+  }
   const asset = String((order && (order.asset || order.to_asset)) || 'ASSET').toUpperCase();
   return [
     'Card to Crypto \u2014 payment succeeded',

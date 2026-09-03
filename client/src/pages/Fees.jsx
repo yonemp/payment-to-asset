@@ -5,7 +5,7 @@ import PageHero from '../components/PageHero';
 const ROWS = [
   { label: 'You enter', value: '$100.00' },
   { label: 'Service fee · 14%', value: '$14.00' },
-  { label: 'Converted at live rate', value: '$86.00' },
+  { label: 'Credits issued', value: '86.00 credits' },
 ];
 
 export default function Fees() {
@@ -17,9 +17,9 @@ export default function Fees() {
     <>
       <PageHero
         kicker="// FEES"
-        chips={['14%', 'LIVE QUOTE', 'CARD']}
+        chips={['14%', 'CREDITS', 'CARD']}
         title="14% from the amount you enter"
-        lede="A 14% service fee is taken from the USD you type. The remaining 86% is converted at the live rate when the order is created. Card processing happens on card checkout. Minimum purchase is $25. Maximum purchase is $5000."
+        lede="A 14% service fee is taken from the USD you type. The remaining 86% becomes your credit balance: $1 net = 1 credit. Card processing happens on card checkout. Minimum purchase is $25. Maximum purchase is $5000."
         aside={
           <div className="ticket">
             <p className="kicker">// EXAMPLE</p>
@@ -37,7 +37,7 @@ export default function Fees() {
       >
         <div className="actions">
           <Link className="btn btn-primary" to="/buy/sol">
-            Buy Solana
+            Buy credits
           </Link>
           <Link className="btn btn-ghost" to="/faq">
             FAQ
@@ -53,7 +53,7 @@ export default function Fees() {
             <li className="num-card">
               <span className="num">01</span>
               <h3>Always 14%</h3>
-              <p>Taken from the USD you enter — not from a hidden spread we invent.</p>
+              <p>Taken from the USD you enter — not added on top of the amount you type.</p>
             </li>
             <li className="num-card">
               <span className="num">02</span>
@@ -62,8 +62,8 @@ export default function Fees() {
             </li>
             <li className="num-card">
               <span className="num">03</span>
-              <h3>Quote is live</h3>
-              <p>If a quote is unavailable we do not invent a coin amount.</p>
+              <h3>$1 net = 1 credit</h3>
+              <p>Credits are a site balance. Crypto redemption is a separate service — coming soon.</p>
             </li>
             <li className="num-card">
               <span className="num">04</span>

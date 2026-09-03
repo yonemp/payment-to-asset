@@ -65,16 +65,20 @@ async function whopFetch(path, opts) {
   return json;
 }
 
-async function createCheckout({ orderId, usdAmount, asset, walletAddress, redirectUrl, cancelUrl }) {
+async function createCheckout({ orderId, usdAmount, asset, walletAddress, creditCode, creditsAmount, redirectUrl, cancelUrl }) {
   const acc = accountId();
   const amount = Number(usdAmount);
+  const isCredits = String(asset || '').toUpperCase() === 'CREDITS' || Boolean(creditCode);
   const payload = {
     account_id: acc,
     redirect_url: redirectUrl,
     metadata: {
       order_id: orderId,
-      asset: asset,
-      wallet_address: walletAddress,
+      asset: isCredits ? 'CREDITS' : asset,
+      product: isCredits ? 'credits' : 'buy',
+      credit_code: creditCode || '',
+      credits_amount: creditsAmount == null ? '' : String(creditsAmount),
+      wallet_address: walletAddress || '',
     },
     plan: {
       account_id: acc,
@@ -85,7 +89,7 @@ async function createCheckout({ orderId, usdAmount, asset, walletAddress, redire
       visibility: 'hidden',
       release_method: 'buy_now',
       force_create_new_plan: true,
-      title: String(asset) + ' delivery',
+      title: isCredits ? 'Credits' : (String(asset) + ' delivery'),
       product: {
         external_identifier: 'card-to-crypto',
         title: 'No KYC Card to Crypto',

@@ -18,7 +18,7 @@ function messageFromApi(res, data, fallback) {
     return fallback + ' (503). The order store is down or unreachable.';
   }
   if (res.status === 400) {
-    return fallback + ' (bad request). Check the wallet address and amount.';
+    return fallback + ' (bad request). Check the amount.';
   }
   if (res.status >= 500) {
     return fallback + ' (server ' + res.status + '). The API crashed or is misconfigured — this is not a wallet-validation error.';
@@ -39,11 +39,11 @@ async function readJson(res) {
   }
 }
 
-export async function createPayment({ asset, walletAddress, usdAmount }) {
+export async function createPayment({ usdAmount }) {
   const res = await fetch(`${API}/create-payment`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ asset, walletAddress, usdAmount }),
+    body: JSON.stringify({ usdAmount }),
   });
   const data = await readJson(res);
   if (!res.ok) throw new Error(messageFromApi(res, data, 'Failed to create session'));

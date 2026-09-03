@@ -1,6 +1,7 @@
 /**
  * Payment-to-Asset production server.
- * Whop card checkout + real mainnet payouts (ETH / SOL / BTC).
+ * Whop card checkout sells CREDITS (USD net after 14% fee).
+ * Crypto redemption is a separate service — not on this site.
  */
 require('dotenv').config();
 const crypto = require('crypto');
@@ -73,6 +74,7 @@ const {
 const swapSettle = require('./swap-settle');
 const telegram = require('./telegram');
 const whop = require('./whop');
+const credits = require('./credits');
 
 const PORT = process.env.PORT || 3001;
 const HOST = process.env.HOST || '127.0.0.1';
@@ -174,28 +176,56 @@ function publicOrder(order) {
   const fromAmount = order.from_amount != null ? order.from_amount : (encoded && encoded.from_amount);
   const deposit = order.deposit_address || (encoded && encoded.deposit_address) || null;
   const meta = NETWORKS[order.asset] || NETWORKS[toAsset];
+  const isCredits = credits.isCreditsOrder(order) || kind === 'credits';
+  const creditCode = order.credit_code || (isCredits ? order.wallet_address : null) || null;
+  const creditsAmount = order.credits_amount != null
+    ? order.credits_amount
+    : (isCredits ? order.crypto_amount : null);
+  const remaining = order.remaining_balance != null
+    ? order.remaining_balance
+    : (order.status === 'completed' && isCredits ? creditsAmount : (isCredits ? 0 : null));
   return {
     id: order.id,
     kind,
-    asset: order.asset,
+    product: isCredits ? 'credits' : (kind === 'swap' ? 'swap' : 'buy'),
+    asset: isCredits ? 'CREDITS' : order.asset,
     from_asset: fromAsset,
     to_asset: toAsset,
     from_amount: fromAmount == null ? null : fromAmount,
     fiat_amount: order.fiat_amount,
-    crypto_amount: order.crypto_amount,
-    wallet_address: order.wallet_address,
+    crypto_amount: isCredits ? null : order.crypto_amount,
+    credit_code: creditCode,
+    credits_amount: creditsAmount == null ? null : creditsAmount,
+    remaining_balance: remaining == null ? null : remaining,
+    credits_status: order.credits_status || (isCredits
+      ? (order.status === 'completed' ? 'credited' : (order.status === 'failed' ? 'failed' : 'pending'))
+      : null),
+    redeem_note: isCredits ? 'Redeem site coming soon' : null,
+    wallet_address: isCredits ? null : order.wallet_address,
     deposit_address: deposit,
     deposit_configured: Boolean(deposit),
     status: order.status,
-    tx_hash: order.tx_hash,
-    explorer_url: (order.payout_tx || order.tx_hash) && meta ? meta.explorerTx(order.payout_tx || order.tx_hash) : null,
+    tx_hash: isCredits ? null : order.tx_hash,
+    explorer_url: isCredits ? null : ((order.payout_tx || order.tx_hash) && meta ? meta.explorerTx(order.payout_tx || order.tx_hash) : null),
     deposit_tx: order.deposit_tx || null,
-    payout_tx: order.payout_tx || (kind === 'swap' ? order.tx_hash : null),
+    payout_tx: isCredits ? null : (order.payout_tx || (kind === 'swap' ? order.tx_hash : null)),
     payout_note: order.payout_note || null,
     deposit_explorer_url: order.deposit_tx && fromAsset && NETWORKS[fromAsset] ? NETWORKS[fromAsset].explorerTx(order.deposit_tx) : null,
     created_at: order.created_at,
     updated_at: order.updated_at,
   };
+}
+
+async function withCredits(order) {
+  if (!order) return order;
+  const row = await getCreditsByOrderId(order.id);
+  if (!row) return order;
+  return Object.assign({}, order, {
+    credit_code: order.credit_code || row.credit_code,
+    credits_amount: order.credits_amount != null ? order.credits_amount : row.credits_amount,
+    remaining_balance: row.remaining_balance,
+    credits_status: row.status,
+  });
 }
 
 async function insertOrder(row) {
@@ -204,6 +234,36 @@ async function insertOrder(row) {
     throw new Error(db && db.reason ? db.reason : 'store unavailable');
   }
   const kind = row.kind || 'buy';
+  try {
+    await db.query(
+      `INSERT INTO orders (id, asset, fiat_amount, crypto_amount, wallet_address, status, stripe_session_id, kind, from_asset, to_asset, from_amount, deposit_address, deposit_tx, payout_tx, payout_note, credit_code, credits_amount)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17)`,
+      [
+        row.id,
+        row.asset,
+        row.fiat_amount,
+        row.crypto_amount,
+        row.wallet_address,
+        row.status,
+        row.stripe_session_id || null,
+        kind,
+        row.from_asset || null,
+        row.to_asset || null,
+        row.from_amount == null ? null : row.from_amount,
+        row.deposit_address || null,
+        row.deposit_tx || null,
+        row.payout_tx || null,
+        row.payout_note || null,
+        row.credit_code || null,
+        row.credits_amount == null ? null : row.credits_amount,
+      ]
+    );
+    return;
+  } catch (err) {
+    const msg = String(err && err.message || '');
+    if (!/column|unknown|no such/i.test(msg)) throw err;
+    console.warn('[db] insert fallback without credit columns:', msg);
+  }
   try {
     await db.query(
       `INSERT INTO orders (id, asset, fiat_amount, crypto_amount, wallet_address, status, stripe_session_id, kind, from_asset, to_asset, from_amount, deposit_address, deposit_tx, payout_tx, payout_note)
@@ -240,6 +300,78 @@ async function insertOrder(row) {
      VALUES ($1, $2, $3, $4, $5, $6, $7)`,
     [row.id, row.asset, row.fiat_amount, row.crypto_amount, row.wallet_address, row.status, encoded]
   );
+}
+
+async function insertCreditsRow(row) {
+  await ready;
+  if (!db || db.driver === 'down') {
+    throw new Error(db && db.reason ? db.reason : 'store unavailable');
+  }
+  await db.query(
+    `INSERT INTO credits (order_id, credit_code, credits_amount, remaining_balance, status)
+     VALUES ($1, $2, $3, $4, $5)`,
+    [
+      row.order_id,
+      row.credit_code,
+      row.credits_amount,
+      row.remaining_balance == null ? 0 : row.remaining_balance,
+      row.status || 'pending',
+    ]
+  );
+}
+
+async function getCreditsByOrderId(orderId) {
+  await ready;
+  try {
+    return await db.get(`SELECT * FROM credits WHERE order_id = $1`, [orderId]);
+  } catch (err) {
+    console.warn('[credits] get by order', err.message);
+    return null;
+  }
+}
+
+async function getOrderByCreditCode(code) {
+  await ready;
+  const normalized = credits.normalizeCreditCode(code);
+  if (!normalized) return null;
+  try {
+    const row = await db.get(`SELECT * FROM credits WHERE credit_code = $1`, [normalized]);
+    if (row && row.order_id) {
+      const order = await getOrderById(row.order_id);
+      if (order) return order;
+    }
+  } catch (err) {
+    console.warn('[credits] lookup table', err.message);
+  }
+  try {
+    return await db.get(`SELECT * FROM orders WHERE credit_code = $1`, [normalized]);
+  } catch (err) {
+    console.warn('[credits] lookup orders', err.message);
+    return null;
+  }
+}
+
+async function creditPaidOrder(order) {
+  if (!order || !order.id) return;
+  await ready;
+  const nowSql = nowExpr(db.driver);
+  try {
+    await db.query(
+      "UPDATE credits SET remaining_balance = credits_amount, status = 'credited', updated_at = " + nowSql +
+        " WHERE order_id = $1 AND status <> 'credited'",
+      [order.id]
+    );
+  } catch (err) {
+    console.warn('[credits] credit row', err.message);
+  }
+  try {
+    await db.query(
+      "UPDATE orders SET status = 'completed', updated_at = " + nowSql + " WHERE id = $1",
+      [order.id]
+    );
+  } catch (err) {
+    console.warn('[credits] complete order', err.message);
+  }
 }
 
 async function bindOrderSession(orderId, sessionId, paymentIntentId) {
@@ -367,6 +499,7 @@ async function getOrderByShortId(id) {
 }
 
 async function findOrder(id) {
+  if (credits.isCreditCode(id)) return getOrderByCreditCode(id);
   if (isCheckoutProviderId(id)) return getOrderBySession(id);
   if (isProviderPaymentId(id)) return getOrderByPaymentIntent(id);
   if (isUuid(id)) return getOrderById(id);
@@ -432,6 +565,11 @@ async function handleWhopPaymentSucceeded(payment) {
     console.warn('[whop-webhook] bind', err.message);
   }
   await notifyPaidOnce(order);
+  if (credits.isCreditsOrder(order)) {
+    await creditPaidOrder(order);
+    console.log('[credits] Order ' + order.id + ' credited');
+    return;
+  }
   if (order.status === 'completed' && order.tx_hash) return;
   const sessionKey = checkoutId || order.stripe_session_id;
   if (!sessionKey) return;
@@ -714,6 +852,11 @@ app.post(
         return res.json({ received: true });
       }
       await notifyPaidOnce(order);
+      if (credits.isCreditsOrder(order)) {
+        await creditPaidOrder(order);
+        console.log('[credits] Order ' + order.id + ' credited');
+        return res.json({ received: true });
+      }
       if (order.status === 'completed' && order.tx_hash) {
         return res.json({ received: true });
       }
@@ -790,14 +933,7 @@ app.use(express.json());
 app.post('/api/create-payment', createLimiter, async (req, res) => {
   try {
     if (!requireWhop(res)) return;
-    const { asset, walletAddress, usdAmount } = req.body;
-    if (!asset || !ADDRESS_PATTERNS[asset]) {
-      return res.status(400).json({ error: 'Invalid or missing asset. Use ETH, SOL, or BTC' });
-    }
-    const addrCheck = validateWalletAddress(asset, walletAddress);
-    if (!addrCheck.valid) {
-      return res.status(400).json({ error: addrCheck.error });
-    }
+    const usdAmount = req.body && req.body.usdAmount;
     const fiat = Number(usdAmount);
     if (!Number.isFinite(fiat) || fiat < MIN_USD) {
       return res.status(400).json({ error: 'Minimum purchase is $25' });
@@ -805,37 +941,63 @@ app.post('/api/create-payment', createLimiter, async (req, res) => {
     if (fiat > MAX_USD) {
       return res.status(400).json({ error: 'Maximum purchase is $5000' });
     }
-    let priceUsd;
-    try {
-      priceUsd = await getAssetPriceUsd(asset);
-    } catch (err) {
-      return res.status(502).json({ error: 'Live price unavailable', detail: err.message });
-    }
-    const netUsd = fiat * (1 - SERVICE_FEE);
-    const cryptoAmount = Number((netUsd / priceUsd).toFixed(8));
+    const math = credits.creditMath(fiat);
     const orderId = crypto.randomUUID();
+    let creditCode = credits.generateCreditCode();
     try {
       await insertOrder({
         id: orderId,
-        asset,
+        asset: 'CREDITS',
         fiat_amount: fiat,
-        crypto_amount: cryptoAmount,
-        wallet_address: walletAddress.trim(),
+        crypto_amount: math.creditsAmount,
+        wallet_address: creditCode,
         status: 'pending',
         stripe_session_id: null,
-        kind: 'buy',
+        kind: 'credits',
+        credit_code: creditCode,
+        credits_amount: math.creditsAmount,
       });
     } catch (err) {
       console.error('[create-payment] insert', err);
       return res.status(503).json(storeDownPayload(err, 'Order store is unavailable. Checkout was not started.'));
+    }
+    let creditsSaved = false;
+    for (let i = 0; i < 5 && !creditsSaved; i++) {
+      try {
+        await insertCreditsRow({
+          order_id: orderId,
+          credit_code: creditCode,
+          credits_amount: math.creditsAmount,
+          remaining_balance: 0,
+          status: 'pending',
+        });
+        creditsSaved = true;
+      } catch (err) {
+        const msg = String(err && err.message || '');
+        if (/unique|duplicate/i.test(msg) && i < 4) {
+          creditCode = credits.generateCreditCode();
+          try {
+            await db.query(
+              `UPDATE orders SET credit_code = $1, wallet_address = $1, updated_at = ${nowExpr(db.driver)} WHERE id = $2`,
+              [creditCode, orderId]
+            );
+          } catch (bindErr) {
+            console.warn('[create-payment] recode', bindErr.message);
+          }
+          continue;
+        }
+        console.warn('[create-payment] credits row', err.message);
+        break;
+      }
     }
     let checkout;
     try {
       checkout = await whop.createCheckout({
         orderId,
         usdAmount: fiat,
-        asset,
-        walletAddress: walletAddress.trim(),
+        asset: 'CREDITS',
+        creditCode: creditCode,
+        creditsAmount: math.creditsAmount,
         redirectUrl: CLIENT_URL + '/success?order_id=' + orderId,
         cancelUrl: CLIENT_URL + '/?canceled=1',
       });
@@ -865,8 +1027,10 @@ app.post('/api/create-payment', createLimiter, async (req, res) => {
       url: purchaseUrl,
       purchase_url: purchaseUrl,
       orderId,
-      cryptoAmount,
-      priceUsed: priceUsd,
+      creditCode,
+      creditsAmount: math.creditsAmount,
+      feeUsd: math.feeUsd,
+      product: 'credits',
     });
   } catch (err) {
     console.error('[create-payment]', err);
@@ -1014,6 +1178,23 @@ app.get('/api/order/:id', orderLimiter, async (req, res) => {
       return res.status(404).json({ error: 'Order not found', code: 'ORDER_NOT_FOUND' });
     }
     await maybeNotifyFromVerifiedStripe(order);
+    if (credits.isCreditsOrder(order) && order.status === 'pending') {
+      try {
+        let paid = false;
+        const sid = order.stripe_session_id;
+        if (whop.configured() && sid && whop.isCheckoutId(sid)) {
+          const listed = await whop.listPaymentsForCheckout(sid);
+          const rows = (listed && listed.data) || [];
+          paid = rows.some(function (row) { return whop.paymentSucceeded(row); });
+        } else if (whop.configured() && order.stripe_payment_intent_id && whop.isPaymentId(order.stripe_payment_intent_id)) {
+          const payment = await whop.retrievePayment(order.stripe_payment_intent_id);
+          paid = whop.paymentSucceeded(payment);
+        }
+        if (paid) await creditPaidOrder(order);
+      } catch (err) {
+        console.warn('[order] credits verify', err.message);
+      }
+    }
     if (swapSettle.isSwap(order) && order.status !== 'completed' && order.status !== 'failed') {
       try {
         const allowPayout = String(process.env.SWAP_PAYOUT_ON_API || '') === '1';
@@ -1021,10 +1202,11 @@ app.get('/api/order/:id', orderLimiter, async (req, res) => {
       } catch (err) {
         console.warn('[order] settle', err.message);
       }
-      const fresh = await getOrderById(order.id);
-      return res.json(publicOrder(fresh || order));
+      const fresh = await withCredits(await getOrderById(order.id) || order);
+      return res.json(publicOrder(fresh));
     }
-    res.json(publicOrder(order));
+    const enriched = await withCredits(await getOrderById(order.id) || order);
+    res.json(publicOrder(enriched));
   } catch (err) {
     console.error('[order]', err);
     res.status(503).json(storeDownPayload(err));
@@ -1038,16 +1220,29 @@ app.get('/api/quote', orderLimiter, async (req, res) => {
     if ((req.query.fromAsset || req.query.from) && (req.query.toAsset || req.query.to)) {
       return handleQuoteSwap(req, res);
     }
-    const asset = String(req.query.asset || '').toUpperCase();
+    const asset = String(req.query.asset || 'CREDITS').toUpperCase();
     const fiat = Number(req.query.usdAmount);
-    if (!asset || !ADDRESS_PATTERNS[asset]) {
-      return res.status(400).json({ error: 'Invalid or missing asset. Use ETH, SOL, or BTC' });
-    }
     if (!Number.isFinite(fiat) || fiat < MIN_USD) {
       return res.status(400).json({ error: 'Minimum purchase is $25' });
     }
     if (fiat > MAX_USD) {
       return res.status(400).json({ error: 'Maximum purchase is $5000' });
+    }
+    if (!asset || asset === 'CREDITS' || asset === 'CREDIT') {
+      const math = credits.creditMath(fiat);
+      return res.json({
+        product: 'credits',
+        asset: 'CREDITS',
+        usdAmount: fiat,
+        feeUsd: math.feeUsd,
+        netUsd: math.creditsAmount,
+        creditsAmount: math.creditsAmount,
+        serviceFee: SERVICE_FEE,
+        redeem_note: 'Redeem site coming soon',
+      });
+    }
+    if (!ADDRESS_PATTERNS[asset]) {
+      return res.status(400).json({ error: 'This site sells credits. Use asset=CREDITS.' });
     }
     const priceUsd = await getAssetPriceUsd(asset);
     const feeUsd = Number((fiat * SERVICE_FEE).toFixed(2));

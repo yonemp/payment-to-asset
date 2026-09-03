@@ -196,6 +196,16 @@ function schemaSql(driver) {
       ');',
       'CREATE INDEX IF NOT EXISTS idx_orders_status ON orders(status);',
       'CREATE INDEX IF NOT EXISTS idx_orders_session ON orders(stripe_session_id);',
+      'CREATE TABLE IF NOT EXISTS credits (',
+      '  order_id TEXT PRIMARY KEY,',
+      '  credit_code TEXT NOT NULL UNIQUE,',
+      '  credits_amount REAL NOT NULL,',
+      '  remaining_balance REAL NOT NULL DEFAULT 0,',
+      '  status TEXT NOT NULL DEFAULT \'pending\',',
+      '  created_at TEXT NOT NULL DEFAULT (datetime(\'now\')),',
+      '  updated_at TEXT NOT NULL DEFAULT (datetime(\'now\'))',
+      ');',
+      'CREATE INDEX IF NOT EXISTS idx_credits_code ON credits(credit_code);',
     ].join('\n');
   }
   return [
@@ -219,6 +229,16 @@ function schemaSql(driver) {
     ');',
     'CREATE INDEX IF NOT EXISTS idx_orders_status ON orders(status);',
     'CREATE INDEX IF NOT EXISTS idx_orders_session ON orders(stripe_session_id);',
+    'CREATE TABLE IF NOT EXISTS credits (',
+    '  order_id TEXT PRIMARY KEY,',
+    '  credit_code TEXT NOT NULL UNIQUE,',
+    '  credits_amount DOUBLE PRECISION NOT NULL,',
+    '  remaining_balance DOUBLE PRECISION NOT NULL DEFAULT 0,',
+    '  status TEXT NOT NULL DEFAULT \'pending\',',
+    '  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),',
+    '  updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()',
+    ');',
+    'CREATE INDEX IF NOT EXISTS idx_credits_code ON credits(credit_code);',
   ].join('\n');
 }
 
@@ -236,6 +256,9 @@ function migrateSql(driver) {
       'ALTER TABLE orders ADD COLUMN payout_tx TEXT',
       'ALTER TABLE orders ADD COLUMN payout_note TEXT',
       'ALTER TABLE orders ADD COLUMN telegram_notified_at TEXT',
+      'ALTER TABLE orders ADD COLUMN credit_code TEXT',
+      'ALTER TABLE orders ADD COLUMN credits_amount REAL',
+      'CREATE UNIQUE INDEX IF NOT EXISTS idx_orders_credit_code ON orders(credit_code)',
     ];
   }
   return [
@@ -250,6 +273,9 @@ function migrateSql(driver) {
     'ALTER TABLE orders ADD COLUMN IF NOT EXISTS payout_tx TEXT',
     'ALTER TABLE orders ADD COLUMN IF NOT EXISTS payout_note TEXT',
     'ALTER TABLE orders ADD COLUMN IF NOT EXISTS telegram_notified_at TIMESTAMPTZ',
+    'ALTER TABLE orders ADD COLUMN IF NOT EXISTS credit_code TEXT',
+    'ALTER TABLE orders ADD COLUMN IF NOT EXISTS credits_amount DOUBLE PRECISION',
+    'CREATE UNIQUE INDEX IF NOT EXISTS idx_orders_credit_code ON orders(credit_code)',
   ];
 }
 

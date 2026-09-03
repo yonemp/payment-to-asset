@@ -11,7 +11,7 @@ export default function Terms() {
       <div className="wrap legal-wrap">
         <div className="section-head">
           <h1>Terms of Use</h1>
-          <p>Last updated August 29, 2026. Card to Crypto at cardtosol.com and cardtobtc.com.</p>
+          <p>Last updated September 3, 2026. Card to Crypto at cardtosol.com and cardtobtc.com.</p>
         </div>
 
         <div className="legal-body">
@@ -22,11 +22,16 @@ export default function Terms() {
 
           <h2>The service</h2>
           <p>
-            Card to Crypto lets you pay USD with a credit or debit card. After
-            Stripe confirms the payment, we send ETH, SOL, or BTC to the wallet
-            address you enter. A 14% service fee is taken from the USD amount you
-            enter. The remaining 86% is converted at the live rate when the
-            order is created.
+            Card to Crypto on this site sells credits. You pay USD with a
+            credit or debit card. A 14% service fee is taken from the USD
+            amount you enter. The remaining 86% is credited as a site balance
+            ($1 net = 1 credit) to a credit code and order ID. This site does
+            not send cryptocurrency and does not sell ETH, SOL, or BTC here.
+          </p>
+          <p>
+            Crypto redemption, if offered later, is a separate service. It is
+            not part of this checkout. We do not promise a redeem domain, a
+            redeem date, or a conversion rate on this site.
           </p>
           <p>
             This site does not run its own identity-check program. The payment
@@ -34,41 +39,33 @@ export default function Terms() {
             the card charge.
           </p>
 
-          <h2>Your wallet</h2>
+          <h2>Credit codes</h2>
           <p>
-            You must enter a wallet address you control for the asset you pick.
-            We send to the address as typed. If the address is wrong, belongs to
-            someone else, or does not support that asset, the funds are likely
-            gone. Transfers cannot be reversed after they are broadcast.
+            After payment you receive an order ID and a credit code. You must
+            save them. Anyone with the code can look up the balance. We are
+            not responsible if you lose the code or share it.
           </p>
 
           <h2>Quotes and price</h2>
           <p>
-            The amount shown before you pay is an estimate from a live quote.
-            Crypto prices move. We do not guarantee the final amount, a fill
-            price, or a delivery time. Delivery depends on the card payment
-            clearing and on network conditions.
-          </p>
-
-          <h2>Crypto risk</h2>
-          <p>
-            Crypto is volatile. This site is a checkout, not investment advice,
-            not a broker, and not a custodial wallet. Once the asset arrives, it
-            is yours to hold, send, or use.
+            Credits are issued 1:1 with net USD after the 14% fee. We do not
+            quote a live crypto amount on this site. If you later redeem
+            credits, that conversion happens on the redeem service under its
+            own terms.
           </p>
 
           <h2>Orders we may refuse</h2>
           <p>
             We may refuse, delay, or cancel an order if the payment does not
-            clear, the address fails checks, the send cannot be broadcast, or we
-            believe the order is fraudulent or not allowed.
+            clear, we cannot issue credits, or we believe the order is
+            fraudulent or not allowed.
           </p>
 
           <h2>What you may not do</h2>
           <p>
             You may not use this site for illegal activity, fraud, or to send
             value to or from sanctioned jurisdictions or sanctioned people. You
-            must be allowed to use a card on-ramp under the laws that apply to
+            must be allowed to use a card checkout under the laws that apply to
             you.
           </p>
 
@@ -76,9 +73,8 @@ export default function Terms() {
           <p>
             The service is provided as is. To the fullest extent allowed by
             applicable law, Card to Crypto and the operators of cardtosol.com and cardtobtc.com are
-            not liable for lost funds from a wrong address, network delays or
-            congestion, price movement between quote and send, Stripe declines
-            or holds, or downtime.
+            not liable for a lost credit code, payment processor declines or
+            holds, or downtime.
           </p>
           <p>
             Our total liability for a given order is limited to the USD amount

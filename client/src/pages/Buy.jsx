@@ -1,5 +1,5 @@
 import { useEffect } from 'react';
-import { Link, Navigate, useNavigate, useParams } from 'react-router-dom';
+import { Link, Navigate, useParams } from 'react-router-dom';
 import CheckoutWidget from '../components/CheckoutWidget';
 import PageHero from '../components/PageHero';
 import { getAsset } from '../lib/assets';
@@ -8,32 +8,28 @@ const SLUGS = { sol: 'SOL', eth: 'ETH', btc: 'BTC' };
 
 export default function Buy() {
   const { asset: slug } = useParams();
-  const navigate = useNavigate();
-  const code = SLUGS[(slug || '').toLowerCase()];
+  const code = slug ? SLUGS[(slug || '').toLowerCase()] : 'SOL';
 
   useEffect(() => {
     document.title = 'No KYC Card to Crypto';
   }, []);
 
-  if (!code) {
+  if (slug && !SLUGS[(slug || '').toLowerCase()]) {
     return <Navigate to="/buy/sol" replace />;
   }
 
-  const meta = getAsset(code);
+  const meta = getAsset(code || 'SOL');
 
   return (
     <>
       <PageHero
         kicker="// BUY"
         chips={['CARD', 'NO KYC', '14% FEE', 'TRUST']}
-        title={`Buy ${meta.name} with a card`}
-        lede={`Pay in USD with a card. Receive ${meta.symbol} at the wallet address you enter. A 14% service fee is taken from the amount you type; the rest converts at the live rate.`}
+        title="Buy credits with a card"
+        lede={`Pay in USD with a card. A 14% service fee is taken from the amount you type; the remaining 86% becomes credits ($1 net = 1 credit). Redeem later for ${meta.symbol} and other assets on our redeem site — coming soon. No wallet at checkout.`}
         aside={
           <div id="checkout">
-            <CheckoutWidget
-              asset={code}
-              onAssetChange={(next) => navigate(`/buy/${next.toLowerCase()}`)}
-            />
+            <CheckoutWidget />
           </div>
         }
       >
@@ -46,7 +42,7 @@ export default function Buy() {
           </Link>
         </div>
         <p className="hero-fine mono">
-          Card checkout · No KYC · live quote · {meta.eta} typical
+          Card checkout · No KYC · credits · redeem site coming soon
         </p>
       </PageHero>
 
@@ -55,9 +51,9 @@ export default function Buy() {
           <p className="kicker">// AT A GLANCE</p>
           <div className="glance-grid">
             <article className="glance-card">
-              <span className="mini-chip">ASSET</span>
-              <strong>{meta.name}</strong>
-              <p>{meta.symbol} · {meta.network}</p>
+              <span className="mini-chip">PRODUCT</span>
+              <strong>Credits</strong>
+              <p>$1 net = 1 credit</p>
             </article>
             <article className="glance-card">
               <span className="mini-chip">FEE</span>
@@ -70,9 +66,9 @@ export default function Buy() {
               <p>Credit or debit card</p>
             </article>
             <article className="glance-card">
-              <span className="mini-chip">TIME</span>
-              <strong>{meta.eta}</strong>
-              <p>After the card confirms</p>
+              <span className="mini-chip">REDEEM</span>
+              <strong>Later</strong>
+              <p>Redeem site coming soon</p>
             </article>
           </div>
         </div>
@@ -90,18 +86,18 @@ export default function Buy() {
             </li>
             <li className="num-card">
               <span className="num">02</span>
-              <h3>Name the wallet</h3>
-              <p>Paste a {meta.name} address you control. Format is checked before checkout.</p>
+              <h3>Pay with a card</h3>
+              <p>Card checkout takes the card. No wallet address is required here.</p>
             </li>
             <li className="num-card">
               <span className="num">03</span>
-              <h3>Pay with a card</h3>
-              <p>Card checkout takes the card. After it confirms we send {meta.symbol} to that address.</p>
+              <h3>Copy your code</h3>
+              <p>After payment, credits are issued to a credit code and order ID you can look up. Redeem for {meta.symbol} later — redeem site coming soon.</p>
             </li>
           </ol>
           <p className="aside-note" style={{ marginTop: 28 }}>
-            Quotes come from the same live source used at payout. If a quote
-            is unavailable we do not invent a coin amount.
+            This site sells credits. It does not send crypto. Redemption is a
+            separate service that is not live yet.
           </p>
         </div>
       </section>

@@ -1,30 +1,26 @@
 export const FAQ = [
   {
-    q: 'How fast is delivery?',
-    a: 'You pay with a card first. After the card confirms we broadcast the asset to your wallet. Ethereum and Solana are typically minutes; Bitcoin depends on mempool conditions.',
+    q: 'What am I buying?',
+    a: 'Credits. You pay USD with a card. A 14% service fee is taken from the amount you enter. The remaining 86% is credited as a balance ($1 net = 1 credit) on a credit code and order ID. This site does not send crypto.',
   },
   {
     q: 'What is the fee?',
-    a: 'A 14% service fee is taken from the USD you enter. The remaining 86% is converted at the live rate when the order is created. Minimum purchase is $25 so small orders do not lose money on fees. Maximum purchase is $5000.',
+    a: 'A 14% service fee is taken from the USD you enter. The remaining 86% becomes credits. Minimum purchase is $25. Maximum purchase is $5000.',
   },
   {
     q: 'What are the purchase limits?',
     a: 'Minimum purchase is $25. Maximum purchase is $5000.',
   },
   {
-    q: 'Which assets can I buy?',
-    a: 'Solana (featured), Ethereum, and Bitcoin. We send to the wallet address you enter for that asset.',
+    q: 'How do I find my balance?',
+    a: 'After payment, the success page shows your credit code and remaining balance. Lookup also works with the order ID, the credit code, or a checkout / payment id from the receipt.',
   },
   {
-    q: 'What if I enter the wrong address?',
-    a: 'The form checks format and length before checkout. After a transfer is broadcast it cannot be reversed. Double-check the destination.',
+    q: 'When can I redeem credits for crypto?',
+    a: 'Redemption is a separate service. The redeem site is coming soon. Keep your credit code and order ID.',
   },
   {
-    q: 'Where does the quote come from?',
-    a: 'The estimated amount is a live server quote from the same rate source used at payout. If a quote is unavailable we do not invent a coin amount.',
-  },
-  {
-    q: 'Do I need an account?',
-    a: 'No. You enter a wallet address, pay with a card, and use the order ID on the success page or Lookup if you need status later.',
+    q: 'Do I need a wallet or an account?',
+    a: 'No wallet and no account on this site. You pay with a card and keep the credit code. A wallet is only needed later, on the redeem site.',
   },
 ];

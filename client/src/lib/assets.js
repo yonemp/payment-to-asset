@@ -146,6 +146,17 @@ export function formatUsd(n) {
   });
 }
 
+export function formatCredits(n) {
+  const x = Number(n);
+  if (!Number.isFinite(x)) return '—';
+  return x.toLocaleString('en-US', {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  }) + ' credits';
+}
+
+export const CREDIT_CODE_RE = /^CTC-[A-HJ-NP-Z2-9]{4}-[A-HJ-NP-Z2-9]{4}-[A-HJ-NP-Z2-9]{4}$/i;
+
 export function formatCrypto(amount, symbol) {
   if (amount == null || amount === '') return '—';
   const n = Number(amount);

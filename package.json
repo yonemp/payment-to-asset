@@ -2,7 +2,7 @@
     "name": "payment-to-asset",
     "version": "1.0.0",
     "private": true,
-    "description": "Stripe live checkout to mainnet ETH/SOL/BTC delivery",
+    "description": "Whop card checkout that sells site credits. Crypto redeem is a separate service.",
     "scripts": {
         "install:all": "npm install --prefix server && npm install --prefix client",
         "dev:server": "npm run dev --prefix server",
