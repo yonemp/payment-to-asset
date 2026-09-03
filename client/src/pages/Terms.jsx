@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom';
 
 export default function Terms() {
   useEffect(() => {
-    document.title = 'No KYC Card to Crypto';
+    document.title = 'Card to Crypto';
   }, []);
 
   return (
@@ -36,9 +36,11 @@ export default function Terms() {
             set on the redeem service under its own terms.
           </p>
           <p>
-            This site does not run its own identity-check program. The payment
-            processor may collect billing or identity information as part of
-            the card charge.
+            Card checkout is handled by the payment processor. This site sells
+            credits. Crypto redemption is a separate service at{' '}
+            <a href="https://www.insider.quest/">www.insider.quest</a>. The
+            payment processor or redeem service may collect billing or identity
+            information.
           </p>
 
           <h2>Credit codes</h2>

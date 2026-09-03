@@ -72,7 +72,6 @@ function ModeTabs({ tab, onChange }) {
         onClick={() => onChange('buy')}
       >
         Buy
-        <span className="no-kyc-pill">No KYC</span>
       </button>
       <button
         type="button"
@@ -217,8 +216,6 @@ function BuyPanel() {
           'Buy credits'
         )}
       </button>
-
-      <p className="no-kyc-line mono">No KYC</p>
 
       <FeeTicket fees={fees} mode="credits" />
 

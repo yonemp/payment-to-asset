@@ -13,7 +13,7 @@ export default function Footer() {
           </Link>
           <p>Buy credits with a card. <a href={REDEEM_URL}>Redeem credits</a>.</p>
           <p className="footer-tag">
-            No KYC · <a href="https://www.cardtosol.com/">cardtosol.com</a> · <a href="https://www.cardtobtc.com/">cardtobtc.com</a> · <a href={REDEEM_URL}>insider.quest</a>
+            <a href="https://www.cardtosol.com/">cardtosol.com</a> · <a href="https://www.cardtobtc.com/">cardtobtc.com</a> · <a href={REDEEM_URL}>insider.quest</a>
           </p>
         </div>
         <div>

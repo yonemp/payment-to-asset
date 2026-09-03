@@ -92,7 +92,7 @@ async function createCheckout({ orderId, usdAmount, asset, walletAddress, credit
       title: isCredits ? 'Credits' : (String(asset) + ' delivery'),
       product: {
         external_identifier: 'card-to-crypto',
-        title: 'No KYC Card to Crypto',
+        title: 'Card to Crypto',
         visibility: 'hidden',
         redirect_purchase_url: redirectUrl,
       },

@@ -26,7 +26,7 @@ export default function Nav() {
           <BrandMark />
           <span className="brand-lockup">
             <span className="brand-word">Card to Crypto</span>
-            <span className="brand-tag">The only true · no KYC ·<br />cardtosol.com · cardtobtc.com</span>
+            <span className="brand-tag">cardtosol.com · cardtobtc.com</span>
           </span>
         </Link>
 

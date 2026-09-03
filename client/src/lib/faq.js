@@ -23,4 +23,8 @@ export const FAQ = [
     q: 'Do I need a wallet or an account?',
     a: 'No wallet and no account on this site. You pay with a card and keep the credit code. A wallet is only needed later, on the redeem site.',
   },
+  {
+    q: 'How is identity handled at checkout?',
+    a: 'Card checkout is handled by the payment processor. This site sells credits. Redemption is a separate service at https://www.insider.quest/. The processor or redeem service may ask for billing or identity information.',
+  },
 ];

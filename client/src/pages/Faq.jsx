@@ -7,7 +7,7 @@ export default function Faq() {
   const [open, setOpen] = useState(0);
 
   useEffect(() => {
-    document.title = 'No KYC Card to Crypto';
+    document.title = 'Card to Crypto';
   }, []);
 
   return (

@@ -11,7 +11,7 @@ export default function Buy() {
   const code = slug ? SLUGS[(slug || '').toLowerCase()] : 'SOL';
 
   useEffect(() => {
-    document.title = 'No KYC Card to Crypto';
+    document.title = 'Card to Crypto';
   }, []);
 
   if (slug && !SLUGS[(slug || '').toLowerCase()]) {
@@ -24,7 +24,7 @@ export default function Buy() {
     <>
       <PageHero
         kicker="// BUY"
-        chips={['CARD', 'NO KYC', '14% FEE', 'TRUST']}
+        chips={['CARD', 'CREDITS', '14% FEE', 'TRUST']}
         title="Buy credits with a card"
         lede={`Pay in USD with a card. A 14% service fee is taken from the amount you type; the remaining 86% becomes credits ($1 net = 1 credit). Redeem later for ${meta.symbol} and other assets at https://www.insider.quest/. No wallet at checkout.`}
         aside={
@@ -42,7 +42,7 @@ export default function Buy() {
           </Link>
         </div>
         <p className="hero-fine mono">
-          Card checkout · No KYC · credits · Redeem credits at insider.quest
+          Card checkout · credits · Redeem credits at insider.quest
         </p>
       </PageHero>
 

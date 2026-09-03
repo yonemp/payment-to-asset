@@ -74,7 +74,7 @@ export default function Success() {
   }, [order]);
 
   useEffect(() => {
-    document.title = 'No KYC Card to Crypto';
+    document.title = 'Card to Crypto';
   }, []);
 
   const isSwap = order && order.kind === 'swap';

@@ -6,7 +6,7 @@ const STEPS = [
   {
     n: '01',
     title: 'Pay',
-    body: 'Enter USD and pay with a card checkout. No wallet and no KYC on this site.',
+    body: 'Enter USD and pay with a card checkout. No wallet on this site.',
   },
   {
     n: '02',
@@ -59,7 +59,7 @@ const TOPICS = [
 
 export default function Home() {
   useEffect(() => {
-    document.title = 'No KYC Card to Crypto';
+    document.title = 'Card to Crypto';
   }, []);
 
   return (
@@ -74,7 +74,7 @@ export default function Home() {
 
         <div className="wrap hero-grid">
           <div className="hero-copy">
-            <p className="eyebrow">Buy credits with a card · no KYC</p>
+            <p className="eyebrow">Buy credits with a card</p>
             <h1>
               Buy credits
               <br />

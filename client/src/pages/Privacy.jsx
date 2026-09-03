@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom';
 
 export default function Privacy() {
   useEffect(() => {
-    document.title = 'No KYC Card to Crypto';
+    document.title = 'Card to Crypto';
   }, []);
 
   return (
