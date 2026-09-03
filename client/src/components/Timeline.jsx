@@ -8,7 +8,7 @@ const BUY_STEPS = [
 const CREDITS_STEPS = [
   { key: 'paid', label: 'Paid', wait: 'Waiting for card confirmation' },
   { key: 'credited', label: 'Credits issued', wait: 'Balance is issued after the card confirms' },
-  { key: 'redeem', label: 'Redeem', wait: 'Redeem site coming soon' },
+  { key: 'redeem', label: 'Redeem', wait: 'Redeem credits at insider.quest' },
 ];
 
 const SWAP_STEPS = [

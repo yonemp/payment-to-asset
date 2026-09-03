@@ -18,7 +18,7 @@ export default function FeeTicket({ asset, fees, quote, quoteState, mode = 'buy'
         </div>
         <div className="buy-meta-row">
           <span>Redeem</span>
-          <span>Redeem site coming soon</span>
+          <span><a href="https://www.insider.quest/">Redeem credits</a></span>
         </div>
       </div>
     );

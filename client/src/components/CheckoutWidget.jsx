@@ -204,7 +204,7 @@ function BuyPanel() {
       </div>
 
       <p className="hint" style={{ marginTop: 4 }}>
-        Redeem later for SOL, ETH, or BTC on our redeem site — coming soon. No wallet needed at checkout.
+        Redeem later for SOL, ETH, or BTC at <a href="https://www.insider.quest/">insider.quest</a>. No wallet needed at checkout.
       </p>
 
       <button type="submit" className="btn btn-pay" disabled={!canPay}>

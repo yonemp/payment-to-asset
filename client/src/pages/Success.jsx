@@ -98,7 +98,7 @@ export default function Success() {
           <p>
             {isSwap
               ? 'Deposit → Quoted → Settling → Delivered. This page updates until the outbound transfer lands or fails. We do not mark a swap complete until it actually settles.'
-              : 'Paid → Credits issued. Copy your credit code. Lookup by order ID or credit code. Redeem site coming soon.'}
+              : 'Paid → Credits issued. Copy your credit code. Lookup by order ID or credit code. Redeem credits at https://www.insider.quest/.'}
           </p>
         </div>
 
@@ -197,7 +197,7 @@ export default function Success() {
                   {isCredits && (
                     <p className="deposit-help">
                       {order.status === 'completed'
-                        ? 'Credits are on this code. Redeem site coming soon.'
+                        ? 'Credits are on this code. Redeem at https://www.insider.quest/.'
                         : 'Credits are issued after the card confirms. Save the code and order ID.'}
                     </p>
                   )}
@@ -275,7 +275,7 @@ export default function Success() {
                       </div>
                       <div className="detail-row">
                         <span>Redeem</span>
-                        <span>{order.redeem_note || 'Redeem site coming soon'}</span>
+                        <span>{order.redeem_note ? <a href="https://www.insider.quest/">{order.redeem_note}</a> : <a href="https://www.insider.quest/">Redeem credits</a>}</span>
                       </div>
                     </>
                   ) : (

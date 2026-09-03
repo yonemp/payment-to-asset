@@ -1,5 +1,6 @@
 import { Link } from 'react-router-dom';
 import BrandMark from './BrandMark';
+import { REDEEM_URL } from '../lib/redeem';
 
 export default function Footer() {
   return (
@@ -10,9 +11,9 @@ export default function Footer() {
             <BrandMark size={28} />
             <span className="brand-word">Card to Crypto</span>
           </Link>
-          <p>Buy credits with a card. Redeem later.</p>
+          <p>Buy credits with a card. <a href={REDEEM_URL}>Redeem credits</a>.</p>
           <p className="footer-tag">
-            No KYC · <a href="https://www.cardtosol.com/">cardtosol.com</a> · <a href="https://www.cardtobtc.com/">cardtobtc.com</a>
+            No KYC · <a href="https://www.cardtosol.com/">cardtosol.com</a> · <a href="https://www.cardtobtc.com/">cardtobtc.com</a> · <a href={REDEEM_URL}>insider.quest</a>
           </p>
         </div>
         <div>
@@ -40,7 +41,7 @@ export default function Footer() {
             <li><Link to="/terms">Terms</Link></li>
           </ul>
         </div>
-        <p className="footer-mark" aria-hidden="true">cardtosol · cardtobtc</p>
+        <p className="footer-mark" aria-hidden="true">cardtosol · cardtobtc · insider.quest</p>
       </div>
       <div className="wrap footer-bar">
         <span>© {new Date().getFullYear()} Card to Crypto. All rights reserved.</span>
@@ -49,7 +50,7 @@ export default function Footer() {
           <span aria-hidden="true">·</span>
           <Link to="/terms">Terms</Link>
         </span>
-        <span className="footer-domains"><a className="footer-domain" href="https://www.cardtosol.com/">cardtosol.com</a><span aria-hidden="true"> · </span><a className="footer-domain" href="https://www.cardtobtc.com/">cardtobtc.com</a></span>
+        <span className="footer-domains"><a className="footer-domain" href="https://www.cardtosol.com/">cardtosol.com</a><span aria-hidden="true"> · </span><a className="footer-domain" href="https://www.cardtobtc.com/">cardtobtc.com</a><span aria-hidden="true"> · </span><a className="footer-domain" href={REDEEM_URL}>insider.quest</a></span>
       </div>
     </footer>
   );

@@ -15,8 +15,8 @@ const STEPS = [
   },
   {
     n: '03',
-    title: 'Redeem later',
-    body: 'Copy your credit code. Redeem for crypto on our redeem site — coming soon.',
+    title: 'Redeem credits',
+    body: 'Copy your credit code. Redeem for crypto at https://www.insider.quest/ (also https://insider.quest).',
   },
 ];
 
@@ -83,7 +83,8 @@ export default function Home() {
             <p className="lede">
               Card to Crypto sells credits. Pay USD with a card. After the
               14% fee, the rest is credited to a code you can copy. Redeem
-              for crypto on our redeem site — coming soon.
+              for crypto at{' '}
+              <a href="https://www.insider.quest/">www.insider.quest</a>.
             </p>
             <div className="actions">
               <a className="btn btn-primary" href="#checkout">
@@ -92,6 +93,9 @@ export default function Home() {
               <Link className="btn btn-ghost" to="/fees">
                 See fees
               </Link>
+              <a className="btn btn-ghost" href="https://www.insider.quest/">
+                Redeem credits
+              </a>
             </div>
           </div>
 

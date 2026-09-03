@@ -63,7 +63,7 @@ export default function Fees() {
             <li className="num-card">
               <span className="num">03</span>
               <h3>$1 net = 1 credit</h3>
-              <p>Credits are a site balance. Crypto redemption is a separate service — coming soon.</p>
+              <p>Credits are a site balance. Crypto redemption is a separate service at <a href="https://www.insider.quest/">insider.quest</a>.</p>
             </li>
             <li className="num-card">
               <span className="num">04</span>

@@ -26,7 +26,7 @@ export default function Buy() {
         kicker="// BUY"
         chips={['CARD', 'NO KYC', '14% FEE', 'TRUST']}
         title="Buy credits with a card"
-        lede={`Pay in USD with a card. A 14% service fee is taken from the amount you type; the remaining 86% becomes credits ($1 net = 1 credit). Redeem later for ${meta.symbol} and other assets on our redeem site — coming soon. No wallet at checkout.`}
+        lede={`Pay in USD with a card. A 14% service fee is taken from the amount you type; the remaining 86% becomes credits ($1 net = 1 credit). Redeem later for ${meta.symbol} and other assets at https://www.insider.quest/. No wallet at checkout.`}
         aside={
           <div id="checkout">
             <CheckoutWidget />
@@ -42,7 +42,7 @@ export default function Buy() {
           </Link>
         </div>
         <p className="hero-fine mono">
-          Card checkout · No KYC · credits · redeem site coming soon
+          Card checkout · No KYC · credits · Redeem credits at insider.quest
         </p>
       </PageHero>
 
@@ -68,7 +68,7 @@ export default function Buy() {
             <article className="glance-card">
               <span className="mini-chip">REDEEM</span>
               <strong>Later</strong>
-              <p>Redeem site coming soon</p>
+              <p><a href="https://www.insider.quest/">Redeem credits</a></p>
             </article>
           </div>
         </div>
@@ -92,12 +92,13 @@ export default function Buy() {
             <li className="num-card">
               <span className="num">03</span>
               <h3>Copy your code</h3>
-              <p>After payment, credits are issued to a credit code and order ID you can look up. Redeem for {meta.symbol} later — redeem site coming soon.</p>
+              <p>After payment, credits are issued to a credit code and order ID you can look up. Redeem for {meta.symbol} later at <a href="https://www.insider.quest/">insider.quest</a>.</p>
             </li>
           </ol>
           <p className="aside-note" style={{ marginTop: 28 }}>
             This site sells credits. It does not send crypto. Redemption is a
-            separate service that is not live yet.
+            separate service at{' '}
+            <a href="https://www.insider.quest/">www.insider.quest</a>.
           </p>
         </div>
       </section>

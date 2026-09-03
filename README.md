@@ -6,7 +6,7 @@ Whop card checkout sells **credits**. This site does not send crypto.
 2. A 14% service fee comes out of that amount. The remaining 86% becomes credits ($1 net = 1 credit)
 3. After Whop confirms payment, credits are issued to a **credit code** and **order ID**
 4. Lookup by order ID or credit code shows remaining balance
-5. Crypto redemption is a separate service (redeem site coming soon). Do not invent a redeem domain.
+5. Crypto redemption is a separate service at https://www.insider.quest/ (also https://insider.quest).
 
 Swap stays disabled.
 

@@ -200,7 +200,7 @@ function publicOrder(order) {
     credits_status: order.credits_status || (isCredits
       ? (order.status === 'completed' ? 'credited' : (order.status === 'failed' ? 'failed' : 'pending'))
       : null),
-    redeem_note: isCredits ? 'Redeem site coming soon' : null,
+    redeem_note: isCredits ? 'Redeem credits' : null,
     wallet_address: isCredits ? null : order.wallet_address,
     deposit_address: deposit,
     deposit_configured: Boolean(deposit),
@@ -1238,7 +1238,7 @@ app.get('/api/quote', orderLimiter, async (req, res) => {
         netUsd: math.creditsAmount,
         creditsAmount: math.creditsAmount,
         serviceFee: SERVICE_FEE,
-        redeem_note: 'Redeem site coming soon',
+        redeem_note: 'Redeem credits',
       });
     }
     if (!ADDRESS_PATTERNS[asset]) {

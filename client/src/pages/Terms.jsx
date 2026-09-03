@@ -29,9 +29,11 @@ export default function Terms() {
             not send cryptocurrency and does not sell ETH, SOL, or BTC here.
           </p>
           <p>
-            Crypto redemption, if offered later, is a separate service. It is
-            not part of this checkout. We do not promise a redeem domain, a
-            redeem date, or a conversion rate on this site.
+            Crypto redemption is a separate service at{' '}
+            <a href="https://www.insider.quest/">www.insider.quest</a>
+            {' '}(also <a href="https://insider.quest">insider.quest</a>).
+            It is not part of this checkout. Conversion rates, if any, are
+            set on the redeem service under its own terms.
           </p>
           <p>
             This site does not run its own identity-check program. The payment

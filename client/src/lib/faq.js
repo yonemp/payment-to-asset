@@ -17,7 +17,7 @@ export const FAQ = [
   },
   {
     q: 'When can I redeem credits for crypto?',
-    a: 'Redemption is a separate service. The redeem site is coming soon. Keep your credit code and order ID.',
+    a: 'Redemption is a separate service at https://www.insider.quest/ (also https://insider.quest). Keep your credit code and order ID.',
   },
   {
     q: 'Do I need a wallet or an account?',
