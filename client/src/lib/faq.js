@@ -1,7 +1,7 @@
 export const FAQ = [
   {
     q: 'How fast is delivery?',
-    a: 'You pay on Stripe first. After the card confirms we broadcast the asset to your wallet. Ethereum and Solana are typically minutes; Bitcoin depends on mempool conditions.',
+    a: 'You pay with a card first. After the card confirms we broadcast the asset to your wallet. Ethereum and Solana are typically minutes; Bitcoin depends on mempool conditions.',
   },
   {
     q: 'What is the fee?',
@@ -25,6 +25,6 @@ export const FAQ = [
   },
   {
     q: 'Do I need an account?',
-    a: 'No. You enter a wallet address, pay with a card on Stripe, and use the order ID on the success page or Lookup if you need status later.',
+    a: 'No. You enter a wallet address, pay with a card, and use the order ID on the success page or Lookup if you need status later.',
   },
 ];

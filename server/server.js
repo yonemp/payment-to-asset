@@ -1,6 +1,6 @@
 /**
  * Payment-to-Asset production server.
- * Stripe live mode + real mainnet payouts (ETH / SOL / BTC).
+ * Whop card checkout + real mainnet payouts (ETH / SOL / BTC).
  */
 require('dotenv').config();
 const crypto = require('crypto');
@@ -72,6 +72,7 @@ const {
 
 const swapSettle = require('./swap-settle');
 const telegram = require('./telegram');
+const whop = require('./whop');
 
 const PORT = process.env.PORT || 3001;
 const HOST = process.env.HOST || '127.0.0.1';
@@ -128,6 +129,14 @@ function isStripeSessionId(id) {
 
 function isStripePaymentIntentId(id) {
   return /^pi_(live_|test_)?[A-Za-z0-9]+$/i.test(id);
+}
+
+function isCheckoutProviderId(id) {
+  return isStripeSessionId(id) || whop.isCheckoutId(id);
+}
+
+function isProviderPaymentId(id) {
+  return isStripePaymentIntentId(id) || whop.isPaymentId(id);
 }
 
 function parseShortOrderId(id) {
@@ -278,6 +287,37 @@ async function getOrderByPaymentIntent(piId) {
   await ready;
   let order = await db.get(`SELECT * FROM orders WHERE stripe_payment_intent_id = $1`, [piId]);
   if (order) return order;
+  if (whop.configured() && whop.isPaymentId(piId)) {
+    try {
+      const payment = await whop.retrievePayment(piId);
+      const orderId = whop.orderIdFromPayment(payment);
+      if (orderId) {
+        order = await getOrderById(orderId);
+        if (order) {
+          try {
+            await bindOrderSession(order.id, payment.checkout_configuration_id || order.stripe_session_id || null, piId);
+          } catch (err) {
+            console.warn('[order] bind whop pay', err.message);
+          }
+          return order;
+        }
+      }
+      if (payment && payment.checkout_configuration_id) {
+        order = await getOrderBySession(payment.checkout_configuration_id);
+        if (order) {
+          try {
+            await bindOrderSession(order.id, payment.checkout_configuration_id, piId);
+          } catch (err) {
+            console.warn('[order] bind whop pay session', err.message);
+          }
+          return order;
+        }
+      }
+    } catch (err) {
+      console.warn('[order] whop pay lookup', err.message);
+    }
+    return null;
+  }
   if (!stripe) return null;
   try {
     const pi = await stripe.paymentIntents.retrieve(piId);
@@ -327,8 +367,8 @@ async function getOrderByShortId(id) {
 }
 
 async function findOrder(id) {
-  if (isStripeSessionId(id)) return getOrderBySession(id);
-  if (isStripePaymentIntentId(id)) return getOrderByPaymentIntent(id);
+  if (isCheckoutProviderId(id)) return getOrderBySession(id);
+  if (isProviderPaymentId(id)) return getOrderByPaymentIntent(id);
   if (isUuid(id)) return getOrderById(id);
   return getOrderByShortId(id);
 }
@@ -342,22 +382,79 @@ async function notifyPaidOnce(order) {
 }
 
 async function maybeNotifyFromVerifiedStripe(order) {
-  if (!order || telegram.isSwapLike(order) || !stripe) return;
+  if (!order || telegram.isSwapLike(order)) return;
   if (!telegram.configured()) return;
   if (order.telegram_notified_at) return;
   try {
     let paid = false;
     const sid = order.stripe_session_id;
-    if (sid && isStripeSessionId(sid)) {
+    if (whop.configured() && sid && whop.isCheckoutId(sid)) {
+      const listed = await whop.listPaymentsForCheckout(sid);
+      const rows = (listed && listed.data) || [];
+      paid = rows.some(function (row) { return whop.paymentSucceeded(row); });
+    } else if (whop.configured() && order.stripe_payment_intent_id && whop.isPaymentId(order.stripe_payment_intent_id)) {
+      const payment = await whop.retrievePayment(order.stripe_payment_intent_id);
+      paid = whop.paymentSucceeded(payment);
+    } else if (stripe && sid && isStripeSessionId(sid)) {
       const session = await stripe.checkout.sessions.retrieve(sid);
       paid = Boolean(session && session.payment_status === 'paid');
-    } else if (order.stripe_payment_intent_id && isStripePaymentIntentId(order.stripe_payment_intent_id)) {
+    } else if (stripe && order.stripe_payment_intent_id && isStripePaymentIntentId(order.stripe_payment_intent_id)) {
       const intent = await stripe.paymentIntents.retrieve(order.stripe_payment_intent_id);
       paid = Boolean(intent && intent.status === 'succeeded');
     }
     if (paid) await notifyPaidOnce(order);
   } catch (err) {
     console.warn('[telegram] success-page verify', err.message);
+  }
+}
+
+async function handleWhopPaymentSucceeded(payment) {
+  const paymentId = payment && payment.id ? payment.id : null;
+  const checkoutId = payment && payment.checkout_configuration_id ? payment.checkout_configuration_id : null;
+  const metaOrderId = whop.orderIdFromPayment(payment);
+  let order = null;
+  if (metaOrderId) {
+    try { order = await getOrderById(metaOrderId); } catch (err) { console.warn('[whop-webhook] order id', err.message); }
+  }
+  if (!order && checkoutId) {
+    try { order = await getOrderBySession(checkoutId); } catch (err) { console.warn('[whop-webhook] checkout', err.message); }
+  }
+  if (!order && paymentId) {
+    try { order = await getOrderByPaymentIntent(paymentId); } catch (err) { console.warn('[whop-webhook] pay', err.message); }
+  }
+  if (!order) {
+    console.warn('[whop-webhook] No order for payment');
+    return;
+  }
+  try {
+    await bindOrderSession(order.id, checkoutId || order.stripe_session_id || null, paymentId);
+  } catch (err) {
+    console.warn('[whop-webhook] bind', err.message);
+  }
+  await notifyPaidOnce(order);
+  if (order.status === 'completed' && order.tx_hash) return;
+  const sessionKey = checkoutId || order.stripe_session_id;
+  if (!sessionKey) return;
+  await updateOrderStatus({ status: 'processing', stripe_session_id: sessionKey });
+  try {
+    const result = await sendPayout({
+      asset: order.asset,
+      cryptoAmount: order.crypto_amount,
+      walletAddress: order.wallet_address,
+    });
+    await updateOrderBySession({
+      status: 'completed',
+      tx_hash: result.txHash,
+      stripe_session_id: sessionKey,
+    });
+    console.log('[payout] Order ' + order.id + ' completed -> ' + result.txHash);
+  } catch (err) {
+    await updateOrderBySession({
+      status: 'failed',
+      tx_hash: null,
+      stripe_session_id: sessionKey,
+    });
+    console.error('[payout] Order ' + order.id + ' failed:', err.message);
   }
 }
 
@@ -481,6 +578,17 @@ function requireLiveStripe(res) {
   return true;
 }
 
+function requireWhop(res) {
+  if (!whop.configured()) {
+    res.status(503).json({
+      error: 'Card checkout is not configured. Set WHOP_API_KEY and WHOP_ACCOUNT_ID in Vercel (Production). Checkout cannot start without it.',
+      code: 'WHOP_NOT_CONFIGURED',
+    });
+    return false;
+  }
+  return true;
+}
+
 
 function normalizeAsset(value) {
   return String(value || '').trim().toUpperCase();
@@ -553,7 +661,7 @@ app.use(
   cors({
     origin: CLIENT_URL,
     methods: ['GET', 'POST'],
-    allowedHeaders: ['Content-Type', 'Stripe-Signature'],
+    allowedHeaders: ['Content-Type', 'Stripe-Signature', 'webhook-id', 'webhook-timestamp', 'webhook-signature'],
   })
 );
 
@@ -651,11 +759,37 @@ app.post(
   }
 );
 
+app.post(
+  '/api/whop-webhook',
+  express.raw({ type: 'application/json' }),
+  async (req, res) => {
+    const secret = whop.webhookSecret();
+    if (!secret) {
+      return res.status(503).send('Whop webhook is not configured');
+    }
+    let event;
+    try {
+      event = whop.verifyWebhook(req.body, req.headers, secret);
+    } catch (err) {
+      console.error('[whop-webhook] verify', err.message);
+      return res.status(err.status || 400).send('Webhook Error: ' + err.message);
+    }
+    try {
+      if (event && event.type === 'payment.succeeded') {
+        await handleWhopPaymentSucceeded(event.data || {});
+      }
+    } catch (err) {
+      console.error('[whop-webhook] handle', err.message);
+    }
+    res.json({ received: true });
+  }
+);
+
 app.use(express.json());
 
 app.post('/api/create-payment', createLimiter, async (req, res) => {
   try {
-    if (!requireLiveStripe(res)) return;
+    if (!requireWhop(res)) return;
     const { asset, walletAddress, usdAmount } = req.body;
     if (!asset || !ADDRESS_PATTERNS[asset]) {
       return res.status(400).json({ error: 'Invalid or missing asset. Use ETH, SOL, or BTC' });
@@ -695,58 +829,41 @@ app.post('/api/create-payment', createLimiter, async (req, res) => {
       console.error('[create-payment] insert', err);
       return res.status(503).json(storeDownPayload(err, 'Order store is unavailable. Checkout was not started.'));
     }
-    let session;
+    let checkout;
     try {
-      session = await stripe.checkout.sessions.create({
-        payment_method_types: ['card'],
-        mode: 'payment',
-        line_items: [
-          {
-            price_data: {
-              currency: 'usd',
-              product_data: {
-                name: `${NETWORKS[asset].symbol} delivery`,
-                description: `${cryptoAmount} ${asset} to ${walletAddress.trim().slice(0, 10)}…`,
-              },
-              unit_amount: Math.round(fiat * 100),
-            },
-            quantity: 1,
-          },
-        ],
-        success_url: `${CLIENT_URL}/success?order_id=${orderId}`,
-        cancel_url: `${CLIENT_URL}/?canceled=1`,
-        metadata: {
-          order_id: orderId,
-          asset,
-          wallet_address: walletAddress.trim(),
-        },
-        payment_intent_data: {
-          metadata: {
-            order_id: orderId,
-            asset,
-            wallet_address: walletAddress.trim(),
-          },
-        },
+      checkout = await whop.createCheckout({
+        orderId,
+        usdAmount: fiat,
+        asset,
+        walletAddress: walletAddress.trim(),
+        redirectUrl: CLIENT_URL + '/success?order_id=' + orderId,
+        cancelUrl: CLIENT_URL + '/?canceled=1',
       });
     } catch (err) {
-      console.error('[create-payment] stripe', err);
-      return res.status(500).json({
+      console.error('[create-payment] whop', err && err.message);
+      return res.status(err && err.status && err.status < 500 ? err.status : 500).json({
         error: 'Failed to create payment session',
         detail: err.message,
         orderId,
       });
     }
+    const purchaseUrl = checkout && (checkout.purchase_url || checkout.purchaseUrl);
+    if (!purchaseUrl) {
+      return res.status(500).json({
+        error: 'Failed to create payment session',
+        detail: 'missing purchase_url',
+        orderId,
+      });
+    }
     try {
-      const paymentIntentId = typeof session.payment_intent === 'string'
-        ? session.payment_intent
-        : (session.payment_intent && session.payment_intent.id) || null;
-      await bindOrderSession(orderId, session.id, paymentIntentId);
+      await bindOrderSession(orderId, checkout.id, null);
     } catch (err) {
       console.error('[create-payment] bind session', err);
     }
     res.json({
-      sessionId: session.id,
-      url: session.url,
+      sessionId: checkout.id,
+      url: purchaseUrl,
+      purchase_url: purchaseUrl,
       orderId,
       cryptoAmount,
       priceUsed: priceUsd,
@@ -972,7 +1089,8 @@ app.get('/api/health', async (_req, res) => {
     ok: true,
     mode: 'live',
     stripe: STRIPE_LIVE,
-    webhook: Boolean(STRIPE_WEBHOOK_SECRET),
+    whop: whop.configured(),
+    webhook: Boolean(whop.webhookSecret()) || Boolean(STRIPE_WEBHOOK_SECRET),
     telegram: telegram.configured(),
     store,
     store_code: store === 'down' ? 'STORE_DOWN' : undefined,
@@ -996,6 +1114,7 @@ module.exports = app;
 if (require.main === module) {
   app.listen(PORT, HOST, () => {
     console.log('Payment-to-asset production server listening on http://' + HOST + ':' + PORT);
+    console.log('Whop checkout: ' + (whop.configured() ? 'configured' : 'not configured'));
     console.log('Stripe mode: ' + (STRIPE_LIVE ? 'live' : 'not configured'));
     console.log('CORS origin: ' + CLIENT_URL);
     console.log('DB driver: ' + (db && db.driver ? db.driver : 'down'));

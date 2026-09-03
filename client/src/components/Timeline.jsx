@@ -1,5 +1,5 @@
 const BUY_STEPS = [
-  { key: 'paid', label: 'Paid', wait: 'Waiting for Stripe confirmation' },
+  { key: 'paid', label: 'Paid', wait: 'Waiting for card confirmation' },
   { key: 'quoted', label: 'Quoted', wait: 'Conversion sized at live rate' },
   { key: 'broadcasting', label: 'Broadcasting', wait: 'Submitting the transfer' },
   { key: 'confirmed', label: 'Confirmed', wait: 'Waiting for the explorer link' },

@@ -17,9 +17,9 @@ export default function Fees() {
     <>
       <PageHero
         kicker="// FEES"
-        chips={['14%', 'LIVE QUOTE', 'STRIPE']}
+        chips={['14%', 'LIVE QUOTE', 'CARD']}
         title="14% from the amount you enter"
-        lede="A 14% service fee is taken from the USD you type. The remaining 86% is converted at the live rate when the order is created. Card processing happens on Stripe. Minimum purchase is $25. Maximum purchase is $5000."
+        lede="A 14% service fee is taken from the USD you type. The remaining 86% is converted at the live rate when the order is created. Card processing happens on card checkout. Minimum purchase is $25. Maximum purchase is $5000."
         aside={
           <div className="ticket">
             <p className="kicker">// EXAMPLE</p>
@@ -57,8 +57,8 @@ export default function Fees() {
             </li>
             <li className="num-card">
               <span className="num">02</span>
-              <h3>Stripe takes the card</h3>
-              <p>We do not store the card number. The charge happens on Stripe Checkout.</p>
+              <h3>Card checkout</h3>
+              <p>We do not store the card number. The charge happens on a hosted card checkout.</p>
             </li>
             <li className="num-card">
               <span className="num">03</span>

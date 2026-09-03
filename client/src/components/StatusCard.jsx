@@ -7,11 +7,11 @@ const RAILS = [
 ];
 
 export default function StatusCard({ health }) {
-  const stripeLabel = health?.stripe
-    ? 'Stripe live'
+  const checkoutLabel = health?.whop
+    ? 'Card checkout'
     : health
-      ? 'Stripe key missing'
-      : 'Stripe';
+      ? 'Checkout not configured'
+      : 'Checkout';
   const storeLabel = health?.store && health.store !== 'down' ? health.store : health ? 'store down' : '—';
 
   return (
@@ -44,7 +44,7 @@ export default function StatusCard({ health }) {
       </div>
       <div className="detail-row" style={{ paddingTop: 0 }}>
         <span>Checkout</span>
-        <span>{stripeLabel}</span>
+        <span>{checkoutLabel}</span>
       </div>
       <div className="detail-row" style={{ paddingTop: 0 }}>
         <span>Store</span>

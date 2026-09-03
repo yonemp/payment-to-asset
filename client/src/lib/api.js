@@ -12,8 +12,8 @@ function messageFromApi(res, data, fallback) {
     return data.error;
   }
   if (res.status === 503) {
-    if (/stripe/i.test(fallback)) {
-      return 'Checkout is unavailable (503). Stripe live mode is not configured — add a rotated STRIPE_SECRET_KEY (sk_live_...) in Vercel Production.';
+    if (/stripe|whop|checkout/i.test(fallback)) {
+      return 'Checkout is unavailable (503). Card checkout is not configured — add WHOP_API_KEY and WHOP_ACCOUNT_ID in Vercel Production.';
     }
     return fallback + ' (503). The order store is down or unreachable.';
   }

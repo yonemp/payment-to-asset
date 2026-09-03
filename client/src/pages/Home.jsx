@@ -6,7 +6,7 @@ const STEPS = [
   {
     n: '01',
     title: 'Pay',
-    body: 'Enter USD, pick SOL, ETH, or BTC, and pay with a card on Stripe Checkout.',
+    body: 'Enter USD, pick SOL, ETH, or BTC, and pay with a card checkout.',
   },
   {
     n: '02',
@@ -27,7 +27,7 @@ const TOPICS = [
     to: '/buy/sol',
     title: 'Buy Solana',
     body: 'The featured product. Pay in USD with a card. SOL lands in the wallet you name.',
-    tags: 'SOL · Stripe · 14% fee',
+    tags: 'SOL · card · 14% fee',
     wide: true,
     dark: true,
   },
@@ -37,7 +37,7 @@ const TOPICS = [
     to: '/buy/eth',
     title: 'Buy Ethereum',
     body: 'Same checkout, different asset. Card payment, live quote, delivery to your address.',
-    tags: 'ETH · Stripe · wallet',
+    tags: 'ETH · card · wallet',
   },
   {
     n: '03',
@@ -45,7 +45,7 @@ const TOPICS = [
     to: '/buy/btc',
     title: 'Buy Bitcoin',
     body: 'Buy BTC with a credit or debit card. We send to a bc1, 1, or 3 address you control.',
-    tags: 'BTC · Stripe · on-chain',
+    tags: 'BTC · card · on-chain',
   },
   {
     n: '04',
@@ -117,7 +117,7 @@ export default function Home() {
           <h2>A card checkout that delivers crypto</h2>
           <p className="lede">
             You pay in USD. We quote at the live rate, take a 14% service fee,
-            and send the asset to your wallet after Stripe confirms.
+            and send the asset to your wallet after the card confirms.
           </p>
         </div>
         <div className="wrap num-grid">

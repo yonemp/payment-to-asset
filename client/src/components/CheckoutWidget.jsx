@@ -162,7 +162,7 @@ function BuyPanel({ asset, onAssetChange }) {
         walletAddress: wallet.trim(),
         usdAmount: usdNum,
       });
-      window.location.href = data.url;
+      window.location.href = data.purchase_url || data.url;
     } catch (err) {
       setError(err.message);
       setLoading(false);
@@ -228,12 +228,12 @@ function BuyPanel({ asset, onAssetChange }) {
       <div className="pay-with">
         <div className="pay-with-head">
           <span>Pay with</span>
-          <span>Card · Stripe</span>
+          <span>Card checkout</span>
         </div>
         <div className="offer-row">
           <span className="offer-logo" aria-hidden="true">S</span>
           <div className="offer-copy">
-            <strong>Stripe</strong>
+            <strong>Card</strong>
             <span>Credit / debit card</span>
           </div>
           <span className="offer-amt">{offerAmt}</span>
@@ -246,7 +246,7 @@ function BuyPanel({ asset, onAssetChange }) {
         {loading ? (
           <>
             <span className="spinner" />
-            Opening Stripe…
+            Opening checkout…
           </>
         ) : (
           `Buy ${meta.symbol}`

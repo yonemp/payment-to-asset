@@ -27,7 +27,7 @@ export default function Buy() {
         kicker="// BUY"
         chips={['CARD', 'NO KYC', '14% FEE', 'TRUST']}
         title={`Buy ${meta.name} with a card`}
-        lede={`Pay in USD on Stripe. Receive ${meta.symbol} at the wallet address you enter. A 14% service fee is taken from the amount you type; the rest converts at the live rate.`}
+        lede={`Pay in USD with a card. Receive ${meta.symbol} at the wallet address you enter. A 14% service fee is taken from the amount you type; the rest converts at the live rate.`}
         aside={
           <div id="checkout">
             <CheckoutWidget
@@ -46,7 +46,7 @@ export default function Buy() {
           </Link>
         </div>
         <p className="hero-fine mono">
-          Stripe · No KYC · live quote · {meta.eta} typical
+          Card checkout · No KYC · live quote · {meta.eta} typical
         </p>
       </PageHero>
 
@@ -66,7 +66,7 @@ export default function Buy() {
             </article>
             <article className="glance-card">
               <span className="mini-chip">PAY</span>
-              <strong>Stripe</strong>
+              <strong>Card</strong>
               <p>Credit or debit card</p>
             </article>
             <article className="glance-card">
@@ -91,12 +91,12 @@ export default function Buy() {
             <li className="num-card">
               <span className="num">02</span>
               <h3>Name the wallet</h3>
-              <p>Paste a {meta.name} address you control. Format is checked before Stripe.</p>
+              <p>Paste a {meta.name} address you control. Format is checked before checkout.</p>
             </li>
             <li className="num-card">
               <span className="num">03</span>
               <h3>Pay with a card</h3>
-              <p>Stripe takes the card. After it confirms we send {meta.symbol} to that address.</p>
+              <p>Card checkout takes the card. After it confirms we send {meta.symbol} to that address.</p>
             </li>
           </ol>
           <p className="aside-note" style={{ marginTop: 28 }}>
