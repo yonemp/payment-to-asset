@@ -7,6 +7,7 @@ export default function Layout() {
   const { pathname } = useLocation();
 
   useEffect(() => {
+    document.title = 'No KYC Card to Crypto';
     window.scrollTo(0, 0);
   }, [pathname]);
 
