@@ -76,9 +76,18 @@ const telegram = require('./telegram');
 const whop = require('./whop');
 const credits = require('./credits');
 
+const path = require('path');
+const fs = require('fs');
 const PORT = process.env.PORT || 3001;
 const HOST = process.env.HOST || '127.0.0.1';
 const CLIENT_URL = process.env.CLIENT_URL || (process.env.VERCEL_PROJECT_PRODUCTION_URL ? ('https://' + process.env.VERCEL_PROJECT_PRODUCTION_URL) : (process.env.VERCEL_URL ? ('https://' + process.env.VERCEL_URL) : 'http://localhost:5173'));
+const CLIENT_ORIGINS = (process.env.CLIENT_ORIGINS || CLIENT_URL)
+  .split(',')
+  .map(function (s) { return s.trim(); })
+  .filter(Boolean);
+const SERVE_STATIC = process.env.SERVE_STATIC === '1' || process.env.SERVE_STATIC === 'true';
+const STATIC_ROOT = process.env.STATIC_ROOT
+  || path.join(__dirname, '..', 'dist');
 const STRIPE_SECRET_KEY = (process.env.STRIPE_SECRET_KEY || '').trim();
 const STRIPE_WEBHOOK_SECRET = (process.env.STRIPE_WEBHOOK_SECRET || '').trim();
 const STRIPE_LIVE = STRIPE_SECRET_KEY.startsWith('sk_live_');
@@ -797,7 +806,11 @@ app.set('trust proxy', 1);
 
 app.use(
   cors({
-    origin: CLIENT_URL,
+    origin: function (origin, cb) {
+      if (!origin) return cb(null, true);
+      if (CLIENT_ORIGINS.indexOf(origin) !== -1) return cb(null, true);
+      return cb(null, false);
+    },
     methods: ['GET', 'POST'],
     allowedHeaders: ['Content-Type', 'Stripe-Signature', 'webhook-id', 'webhook-timestamp', 'webhook-signature'],
   })
@@ -1304,6 +1317,17 @@ app.get('/api/health', async (_req, res) => {
   });
 });
 
+if (SERVE_STATIC && fs.existsSync(STATIC_ROOT)) {
+  app.use(express.static(STATIC_ROOT, { index: false, maxAge: '1h' }));
+  app.get('*', function (req, res, next) {
+    if (req.path.indexOf('/api') === 0) return next();
+    res.sendFile(path.join(STATIC_ROOT, 'index.html'), function (err) {
+      if (err) next(err);
+    });
+  });
+  console.log('[static] serving UI from ' + STATIC_ROOT);
+}
+
 module.exports = app;
 
 if (require.main === module) {
@@ -1311,7 +1335,7 @@ if (require.main === module) {
     console.log('Payment-to-asset production server listening on http://' + HOST + ':' + PORT);
     console.log('Whop checkout: ' + (whop.configured() ? 'configured' : 'not configured'));
     console.log('Stripe mode: ' + (STRIPE_LIVE ? 'live' : 'not configured'));
-    console.log('CORS origin: ' + CLIENT_URL);
+    console.log('CORS origins: ' + CLIENT_ORIGINS.join(', '));
     console.log('DB driver: ' + (db && db.driver ? db.driver : 'down'));
   });
 }
